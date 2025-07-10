@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "build": "npm run db && next build",
+    "start": "next start -p ${PORT-3000}",
+    "lint": "next lint",
+    "db": "npm run db:create && npm run db:migrate",
+    "db:create": "node_modules/sequelize-cli/lib/sequelize db:create",
+    "db:migrate": "./node_modules/sequelize-cli/lib/sequelize db:migrate"
   },
   "dependencies": {
     "@types/bcrypt": "^5.0.2",
