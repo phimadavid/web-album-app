@@ -632,7 +632,7 @@ const PreviewPage = () => {
         // Emit cart update event for header to listen
         window.dispatchEvent(new CustomEvent('cartUpdated'));
 
-        toast.success('Item added to cart!');
+        // toast.success('Item added to cart!');
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Failed to add item to cart');
@@ -785,20 +785,6 @@ const PreviewPage = () => {
                 >
                   <Download className="h-4 w-4" />
                   <span>Download</span>
-                </Button>
-                {/* Cart Button */}
-                <Button
-                  variant="outline"
-                  onClick={handleCartOpen}
-                  className="flex items-center space-x-2 relative"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  <span>Cart</span>
-                  {cartItemCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {cartItemCount}
-                    </span>
-                  )}
                 </Button>
               </div>
             </div>
@@ -1145,14 +1131,14 @@ const FlippingBook: React.FC<ExtendedFlippingBookProps> = ({
       x: isAtBeginning ? '0%' : '100%',
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     }),
     open: {
       x: '50%',
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     },
   };
@@ -1162,14 +1148,14 @@ const FlippingBook: React.FC<ExtendedFlippingBookProps> = ({
       x: 0,
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     },
     visible: (isLeft: boolean) => ({
       x: isLeft ? -180 : 180,
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     }),
   };
@@ -1179,14 +1165,14 @@ const FlippingBook: React.FC<ExtendedFlippingBookProps> = ({
       rotateY: 0,
       transition: {
         duration: 0.7,
-        ease: [0.4, 0.0, 0.2, 1], // Custom easing for paper flip feel
+        ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number], // Custom easing for paper flip feel
       },
     },
     flipped: {
       rotateY: -180,
       transition: {
         duration: 0.7,
-        ease: [0.4, 0.0, 0.2, 1],
+        ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number],
       },
     },
   };
@@ -2090,6 +2076,15 @@ const FlippingBook: React.FC<ExtendedFlippingBookProps> = ({
 
   return (
     <div>
+      <div className="flex justify-end items-end mb-6">
+        <Button
+          onClick={handleOrderNow}
+          className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-semibold rounded-lg shadow-lg"
+        >
+          <BookOpen className="mr-2 h-5 w-5" />
+          Order Now
+        </Button>
+      </div>
       <div className="flex justify-center items-center">
         <motion.button
           onClick={goPrevPage}
@@ -2168,13 +2163,6 @@ const FlippingBook: React.FC<ExtendedFlippingBookProps> = ({
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             >
-              <Button
-                onClick={handleOrderNow}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-semibold rounded-lg shadow-lg"
-              >
-                <BookOpen className="mr-2 h-5 w-5" />
-                Order Now
-              </Button>
             </motion.div>
           </motion.div>
         ) : (

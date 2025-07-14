@@ -122,7 +122,30 @@ export default function CreateAlbum() {
           animate={{ opacity: 1, x: 0 }}
           className="w-full lg:w-1/2 space-y-5 flex flex-col justify-center"
         >
-          {status === 'unauthenticated' ? (
+          <div className="text-center lg:text-left">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="The name of your album"
+              className="w-full text-xl sm:text-2xl lg:text-3xl font-light border-b border-white/50 pb-2 focus:outline-none focus:border-blue-500 placeholder:text-center lg:placeholder:text-right bg-transparent text-white placeholder:text-white/70"
+              style={{ textAlign: window?.innerWidth >= 1024 ? "right" : "center" }}
+            />
+            <div className="mt-2 text-center lg:text-right text-sm text-white/80">
+              Create A New Album
+            </div>
+            <div className="w-full flex justify-center lg:justify-end mt-4">
+              <motion.button
+                onClick={handleSubmit}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-40 px-6 py-3 bg-blue-700 backdrop-blur-sm text-white rounded-full hover:bg-blue-600/80 transition-colors"
+              >
+                Continue
+              </motion.button>
+            </div>
+          </div>
+          {/* {status === 'unauthenticated' ? (
             <div className="text-center lg:text-left space-y-4">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-light text-white">
                 Create Beautiful Albums
@@ -170,7 +193,7 @@ export default function CreateAlbum() {
                 </motion.button>
               </div>
             </div>
-          )}
+          )} */}
         </motion.div>
       </main>
     </div>
