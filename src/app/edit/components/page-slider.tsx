@@ -600,7 +600,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                     {images_to_render.map((image, index) => (
                         <div key={`timeline-${startIndex + index}`} className="flex items-center gap-4">
                             {/* Timeline dot */}
-                            <div className="w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-md flex-shrink-0 z-10"></div>
+                            <div className="w-8 h-8 bg-blue-500 border-4 border-white shadow-md flex-shrink-0 z-10"></div>
 
                             {/* Content */}
                             <div className="flex-1 flex gap-4 items-center">
@@ -611,7 +611,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                             <div
                                                 onClick={() => onImageSelect && onImageSelect(image, startIndex + index)}
                                                 style={getContainerStyle(image)}
-                                                className={`border-2 w-full h-full rounded-lg overflow-hidden cursor-pointer transition-all duration-200 ${selectedImageIndex === startIndex + index
+                                                className={`border-2 w-full h-full overflow-hidden cursor-pointer transition-all duration-200 ${selectedImageIndex === startIndex + index
                                                     ? 'border-4 border-orange-500 shadow-lg scale-105'
                                                     : 'border-white hover:border-orange-300 hover:shadow-md'
                                                     }`}
@@ -665,7 +665,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                     </>
                                 ) : (
                                     <div className="flex gap-4 items-center flex-1">
-                                        <div className="w-24 h-24 border-2 border-gray-300 border-dashed flex items-center justify-center text-gray-400 text-xs rounded-lg">
+                                        <div className="w-24 h-24 border-2 border-gray-300 border-dashed flex items-center justify-center text-gray-400 text-xs">
                                             No Image
                                         </div>
                                         <div className="flex-1">
@@ -700,7 +700,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
 
         if (!hasImages) {
             return (
-                <div className="w-full aspect-square max-w-2xl mx-auto flex flex-col justify-center items-center p-6 rounded-lg shadow-lg bg-gray-100">
+                <div className="w-full aspect-square max-w-2xl mx-auto flex flex-col justify-center items-center p-6 shadow-lg bg-gray-100">
                     <div className="text-center">
                         <h3 className="text-lg font-semibold text-gray-800 mb-2">No Images</h3>
                         <p className="text-gray-600">This slide has no images</p>
@@ -711,7 +711,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
 
         return (
             <div
-                className="w-full aspect-square max-w-2xl mx-auto flex flex-col justify-center items-center p-6 rounded-lg shadow-lg relative"
+                className="w-full aspect-square max-w-2xl mx-auto flex flex-col justify-center items-center p-6 shadow-lg relative"
                 style={{
                     background: frontPageBackground
                         ? `url("${frontPageBackground}") no-repeat center/cover`
@@ -857,7 +857,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                         <div
                             onClick={() => onImageSelect && onImageSelect(imageData[startIndex], startIndex)}
                             style={getContainerStyle(imageData[startIndex])}
-                            className={`aspect-square w-full max-w-md rounded-lg overflow-hidden relative cursor-pointer transition-all duration-200 ${selectedImageIndex === startIndex
+                            className={`aspect-square w-full max-w-md overflow-hidden relative cursor-pointer transition-all duration-200 ${selectedImageIndex === startIndex
                                 ? 'border-4 border-orange-500 shadow-lg scale-105'
                                 : 'border-2 border-white hover:border-orange-300 hover:shadow-md'
                                 }`}
@@ -938,7 +938,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                     <button
                         onClick={prevSlide}
                         disabled={currentSlide === 0}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-white shadow-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <ChevronLeft size={24} className="text-gray-600" />
                     </button>
@@ -946,7 +946,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                     <button
                         onClick={nextSlide}
                         disabled={currentSlide >= totalSlides - 1}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-white shadow-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <ChevronRight size={24} className="text-gray-600" />
                     </button>

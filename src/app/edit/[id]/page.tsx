@@ -48,7 +48,6 @@ import {
   Eye,
   Save,
 } from 'lucide-react';
-import OrderLink from '../components/order.link';
 
 const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
   const paramsId = params.id;
@@ -84,6 +83,9 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
   // New state for image editing
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
+
+  // State for controlling the active panel in AsideNavigation
+  const [activeEditorPanel, setActiveEditorPanel] = useState<string | null>('photos');
 
   // Function to handle individual page layout changes
   const handlePageLayoutChange = (slideIndex: number, layout: string) => {
@@ -645,6 +647,15 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     setSelectedImageIndex(index);
   };
 
+  // Function to handle image selection and auto-open editor
+  const handleImageSelectAndEdit = (image: any, index: number) => {
+    setSelectedImage(image);
+    setSelectedImageIndex(index);
+    // Auto-open editor panel by setting active panel to 'editor'
+    setActiveEditorPanel('editor');
+  };
+
+
   const isContentPage: boolean =
     (currentPage > 0 &&
       currentPage < (albumData?.images?.length || 0) / 1 + 1) ||
@@ -792,7 +803,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 pageLayouts={pageLayouts}
                 onPageLayoutChange={handlePageLayoutChange}
                 selectedImageIndex={selectedImageIndex}
-                onImageSelect={handleImageSelect}
+                onImageSelect={handleImageSelectAndEdit}
               />
             ) : (
               <FlippingBook
@@ -839,7 +850,9 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             selectedImage={selectedImage}
             selectedImageIndex={selectedImageIndex}
             onImageUpdate={handleImageUpdate}
-            onImageSelect={handleImageSelect}
+            onImageSelect={handleImageSelectAndEdit}
+            activePanel={activeEditorPanel}
+            setActivePanel={setActiveEditorPanel}
           />
         </div>
       </div>
@@ -1165,14 +1178,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       x: isAtBeginning ? '0%' : '100%',
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     }),
     open: {
       x: '50%',
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     },
   };
@@ -1182,14 +1195,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       x: 0,
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     },
     visible: (isLeft: boolean) => ({
       x: isLeft ? -180 : 180,
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     }),
   };
@@ -1199,14 +1212,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       rotateY: 0,
       transition: {
         duration: 0.7,
-        ease: [0.4, 0.0, 0.2, 1], // Custom easing for paper flip feel
+        ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number], // Custom easing for paper flip feel
       },
     },
     flipped: {
       rotateY: -180,
       transition: {
         duration: 0.7,
-        ease: [0.4, 0.0, 0.2, 1],
+        ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number],
       },
     },
   };
@@ -2248,8 +2261,12 @@ const AsideNavigation: React.FC<
   selectedImageIndex,
   onImageUpdate,
   onImageSelect,
+  activePanel,
+  setActivePanel,
 }) => {
-    const [activePanel, setActivePanel] = useState<string | null>('photos');
+    // Use external activePanel state or fallback to default
+    const currentActivePanel = activePanel || 'photos';
+    const handleSetActivePanel = setActivePanel || (() => { });
     const [isEditingName, setIsEditingName] = useState<boolean>(false);
     const [localAlbumName, setLocalAlbumName] = useState<string>(
       albumData?.bookName || 'My Photo Album'
@@ -2404,7 +2421,7 @@ const AsideNavigation: React.FC<
     };
 
     const togglePanel = (panelId: string): void => {
-      setActivePanel(activePanel === panelId ? null : panelId);
+      handleSetActivePanel(currentActivePanel === panelId ? null : panelId);
     };
 
     const getCurrentPageImages = () => {
@@ -2878,7 +2895,7 @@ const AsideNavigation: React.FC<
           <div className="p-4 h-full">
             <div className="flex items-center justify-between mb-4">
               <button
-                onClick={() => setActivePanel(null)}
+                onClick={() => setActivePanel && setActivePanel(null)}
                 className="lg:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <X size={20} />
