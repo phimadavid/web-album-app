@@ -66,26 +66,16 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
   const [isToLoading, setIsToLoading] = useState(false);
   const [pageBackgrounds, setPageBackgrounds] = useState<string[]>([]);
   const [showAsideNavigation, setShowAsideNavigation] = useState(false);
-
-  // New state for edit and preview modes
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
   const [isSaving, setIsSaving] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-
-  // New state for caption generation
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
   const [generatedCaptions, setGeneratedCaptions] = useState<GeneratedCaption[]>([]);
   const [copiedCaptionId, setCopiedCaptionId] = useState<string | null>(null);
-
-  // New state for mixed layouts
   const [pageLayouts, setPageLayouts] = useState<string[]>([]);
-
-  // New state for image editing
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
-
-  // State for controlling the active panel in AsideNavigation
-  const [activeEditorPanel, setActiveEditorPanel] = useState<string | null>('photos');
+  const [activeEditorPanel, setActiveEditorPanel] = useState<string | null>('editor');
 
   // Function to handle individual page layout changes
   const handlePageLayoutChange = (slideIndex: number, layout: string) => {
