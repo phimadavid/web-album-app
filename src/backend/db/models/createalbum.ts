@@ -4,13 +4,13 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
-} from 'sequelize';
-import { sequelize } from './db';
+} from "sequelize";
+import { sequelize } from "./db";
 
 export type UserCreationAttributes = InferCreationAttributes<
   CreateAlbum,
   {
-    omit: 'id' | 'createdAt' | 'updatedAt';
+    omit: "id" | "createdAt" | "updatedAt";
   }
 >;
 class CreateAlbum extends Model<
@@ -23,8 +23,6 @@ class CreateAlbum extends Model<
   declare format: string;
   declare dimensions: string;
   declare photosize: string;
-  declare webSizePx: string;
-  declare webPhotoSizePx: string;
   declare coverType: string;
   declare paperQuality: string;
 
@@ -45,8 +43,8 @@ CreateAlbum.init(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Albums',
-        key: 'id',
+        model: "Albums",
+        key: "id",
       },
     },
     format: {
@@ -58,14 +56,6 @@ CreateAlbum.init(
       allowNull: false,
     },
     photosize: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    webSizePx: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    webPhotoSizePx: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -88,7 +78,7 @@ CreateAlbum.init(
   },
   {
     sequelize,
-    tableName: 'albums_formats',
+    tableName: "albums_formats",
   }
 );
 

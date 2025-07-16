@@ -1,12 +1,10 @@
 export type CreateAlbumTypes = {
   albumId: string;
-  format: 'square' | 'rectangular' | 'panoramic';
+  format: "square" | "rectangular" | "panoramic";
   dimensions: string;
   photosize: string;
-  webSizePx: string;
-  webPhotoSizePx: string;
-  coverType: 'hard' | 'soft' | 'spiral' | 'premium';
-  paperQuality: 'matte' | 'glossy' | 'premium';
+  coverType: "hard" | "soft" | "spiral" | "premium";
+  paperQuality: "matte" | "glossy" | "premium";
   createdAt?: Date;
   updatedAt?: Date;
 };

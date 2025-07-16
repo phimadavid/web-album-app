@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('albums_formats', {
+    await queryInterface.createTable("albums_formats", {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -14,8 +14,8 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Albums',
-          key: 'id',
+          model: "Albums",
+          key: "id",
         },
       },
       format: {
@@ -27,14 +27,6 @@ module.exports = {
         allowNull: false,
       },
       photosize: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      webSizePx: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      webPhotoSizePx: {
         type: Sequelize.STRING,
         allowNull: false,
       },
@@ -57,12 +49,12 @@ module.exports = {
     });
 
     // Add indexes
-    await queryInterface.addIndex('albums_formats', ['format']);
-    await queryInterface.addIndex('albums_formats', ['coverType']);
-    await queryInterface.addIndex('albums_formats', ['paperQuality']);
+    await queryInterface.addIndex("albums_formats", ["format"]);
+    await queryInterface.addIndex("albums_formats", ["coverType"]);
+    await queryInterface.addIndex("albums_formats", ["paperQuality"]);
   },
 
   async down(queryInterfac) {
-    await queryInterface.dropTable('albums_formats');
+    await queryInterface.dropTable("albums_formats");
   },
 };

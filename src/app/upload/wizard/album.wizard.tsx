@@ -33,7 +33,6 @@ const getStepTitle = (step: number): string => {
         2: "Cover Type",
         3: "Paper Quality",
         4: "Photo Size",
-        5: "Web Settings"
     };
     return titles[step as keyof typeof titles] || "";
 };
@@ -46,13 +45,11 @@ const AlbumWizard: React.FC<AlbumWizardProps> = ({ onComplete, params }) => {
         coverType: 'hard',
         paperQuality: 'matte',
         photosize: 'medium',
-        webSizePx: '1200x900',
-        webPhotoSizePx: '600x450',
         albumId: params.id,
     });
 
     const handleNext = () => {
-        if (step < 5) {
+        if (step < 4) {
             setStep(step + 1);
         } else {
             onComplete(albumData);
@@ -73,7 +70,7 @@ const AlbumWizard: React.FC<AlbumWizardProps> = ({ onComplete, params }) => {
         <div className="max-w-2xl mx-auto p-6">
             <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
-                    {Array.from({ length: 5 }).map((_, i) => (
+                    {Array.from({ length: 4 }).map((_, i) => (
                         <div
                             key={i}
                             className={`w-8 h-8 rounded-full flex items-center justify-center
@@ -84,7 +81,7 @@ const AlbumWizard: React.FC<AlbumWizardProps> = ({ onComplete, params }) => {
                     ))}
                 </div>
                 <div className="text-center text-sm text-gray-600 mt-2">
-                    Step {step} of 5: {getStepTitle(step)}
+                    Step {step} of 4: {getStepTitle(step)}
                 </div>
             </div>
 
@@ -114,13 +111,6 @@ const AlbumWizard: React.FC<AlbumWizardProps> = ({ onComplete, params }) => {
                         onChange={updateAlbumData}
                     />
                 )}
-                {step === 5 && (
-                    <WebSizeSelector
-                        webSizePx={albumData.webSizePx}
-                        webPhotoSizePx={albumData.webPhotoSizePx}
-                        onChange={updateAlbumData}
-                    />
-                )}
             </div>
 
             <div className="flex justify-between">
@@ -135,7 +125,7 @@ const AlbumWizard: React.FC<AlbumWizardProps> = ({ onComplete, params }) => {
                     onClick={handleNext}
                     className="px-4 py-2 bg-blue-500 text-white rounded"
                 >
-                    {step === 5 ? 'Complete' : 'Next'}
+                    {step === 4 ? 'Complete' : 'Next'}
                 </button>
             </div>
         </div>
