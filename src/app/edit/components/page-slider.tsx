@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Save, Eye, Layout } from 'lucide-react';
-import { AlbumDataProps, ImageDataProps } from '../data-types/types';
+import { ChevronLeft, ChevronRight, Layout } from 'lucide-react';
+import { AlbumDataProps } from '../data-types/types';
 
 interface PageSliderProps {
     albumData: AlbumDataProps | null;
@@ -35,9 +35,6 @@ const PageSlider: React.FC<PageSliderProps> = ({
     currentPage,
     onPageChange,
     pageBackgrounds,
-    onSave,
-    isSaving,
-    onPreview,
     pageLayouts,
     onPageLayoutChange,
     selectedImageIndex,
@@ -733,23 +730,127 @@ const PageSlider: React.FC<PageSliderProps> = ({
 
                 {/* Layout selector dropdown */}
                 {showLayoutSelector && (
-                    <div className="absolute top-12 right-2 z-30 bg-white rounded-lg shadow-xl border border-gray-200 p-2 min-w-48">
-                        <div className="text-xs font-medium text-gray-700 mb-2 px-2">Choose Layout:</div>
-                        {availableLayouts.map((layoutOption) => (
-                            <button
-                                key={layoutOption}
-                                onClick={() => handleLayoutChange(layoutOption)}
-                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${currentPageLayout === layoutOption
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'hover:bg-gray-100 text-gray-700'
-                                    }`}
-                            >
-                                {layoutOption.charAt(0).toUpperCase() + layoutOption.slice(1)}
-                                {currentPageLayout === layoutOption && (
-                                    <span className="ml-2 text-blue-600">✓</span>
-                                )}
-                            </button>
-                        ))}
+                    <div className="absolute top-12 right-2 z-30 bg-white rounded-lg shadow-xl border border-gray-200 p-3 min-w-64">
+                        <div className="text-xs font-medium text-gray-700 mb-3 px-1">Choose Layout:</div>
+                        <div className="grid grid-cols-2 gap-2">
+                            {availableLayouts.map((layoutOption) => (
+                                <button
+                                    key={layoutOption}
+                                    onClick={() => handleLayoutChange(layoutOption)}
+                                    className={`p-2 rounded-md transition-all hover:scale-105 ${currentPageLayout === layoutOption
+                                        ? 'bg-blue-100 border-2 border-blue-500 shadow-md'
+                                        : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    {/* Mockup Preview */}
+                                    <div className="w-full h-16 bg-gray-200 rounded mb-1 relative overflow-hidden">
+                                        {layoutOption === 'single' && (
+                                            <div className="w-full h-full bg-blue-300 flex items-center justify-center">
+                                                <div className="w-10 h-10 bg-blue-500 rounded"></div>
+                                            </div>
+                                        )}
+                                        {layoutOption === 'sidebyside' && (
+                                            <div className="w-full h-full flex gap-1">
+                                                <div className="flex-1 bg-blue-300 flex items-center justify-center">
+                                                    <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                                                </div>
+                                                <div className="flex-1 bg-green-300 flex items-center justify-center">
+                                                    <div className="w-4 h-4 bg-green-500 rounded"></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {layoutOption === 'multiple' && (
+                                            <div className="w-full h-full grid grid-cols-2 gap-1">
+                                                <div className="bg-blue-300 flex items-center justify-center">
+                                                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                                                </div>
+                                                <div className="bg-green-300 flex items-center justify-center">
+                                                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                                                </div>
+                                                <div className="bg-yellow-300 flex items-center justify-center">
+                                                    <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                                                </div>
+                                                <div className="bg-red-300 flex items-center justify-center">
+                                                    <div className="w-3 h-3 bg-red-500 rounded"></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {layoutOption === 'magazine' && (
+                                            <div className="w-full h-full flex gap-1">
+                                                <div className="flex-1 bg-blue-300 flex items-center justify-center">
+                                                    <div className="w-6 h-6 bg-blue-500 rounded"></div>
+                                                </div>
+                                                <div className="w-1/3 flex flex-col gap-1">
+                                                    <div className="flex-1 bg-green-300 flex items-center justify-center">
+                                                        <div className="w-2 h-2 bg-green-500 rounded"></div>
+                                                    </div>
+                                                    <div className="flex-1 bg-yellow-300 flex items-center justify-center">
+                                                        <div className="w-2 h-2 bg-yellow-500 rounded"></div>
+                                                    </div>
+                                                    <div className="flex-1 bg-red-300 flex items-center justify-center">
+                                                        <div className="w-2 h-2 bg-red-500 rounded"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {layoutOption === 'palaroid' && (
+                                            <div className="w-full h-full flex flex-wrap gap-1 p-1">
+                                                <div className="w-6 h-8 bg-white border border-gray-300 transform rotate-3 shadow-sm">
+                                                    <div className="w-full h-5 bg-blue-300"></div>
+                                                    <div className="w-full h-3 bg-white"></div>
+                                                </div>
+                                                <div className="w-6 h-8 bg-white border border-gray-300 transform -rotate-2 shadow-sm">
+                                                    <div className="w-full h-5 bg-green-300"></div>
+                                                    <div className="w-full h-3 bg-white"></div>
+                                                </div>
+                                                <div className="w-6 h-8 bg-white border border-gray-300 transform rotate-1 shadow-sm">
+                                                    <div className="w-full h-5 bg-yellow-300"></div>
+                                                    <div className="w-full h-3 bg-white"></div>
+                                                </div>
+                                                <div className="w-6 h-8 bg-white border border-gray-300 transform -rotate-1 shadow-sm">
+                                                    <div className="w-full h-5 bg-red-300"></div>
+                                                    <div className="w-full h-3 bg-white"></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {layoutOption === 'Timeline' && (
+                                            <div className="w-full h-full flex flex-col justify-center p-1">
+                                                <div className="relative flex flex-col gap-1">
+                                                    <div className="absolute left-1 top-0 bottom-0 w-0.5 bg-gray-400"></div>
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                                                        <div className="w-4 h-3 bg-blue-300 rounded"></div>
+                                                        <div className="flex-1 h-1 bg-gray-300 rounded"></div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                                                        <div className="w-4 h-3 bg-green-300 rounded"></div>
+                                                        <div className="flex-1 h-1 bg-gray-300 rounded"></div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                                                        <div className="w-4 h-3 bg-yellow-300 rounded"></div>
+                                                        <div className="flex-1 h-1 bg-gray-300 rounded"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {layoutOption === 'random' && (
+                                            <div className="w-full h-full bg-gradient-to-br from-purple-300 to-pink-300 flex items-center justify-center">
+                                                <div className="text-xs font-bold text-purple-700">?</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Selection indicator */}
+                                    {currentPageLayout === layoutOption && (
+                                        <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                            <span className="text-xs text-white">✓</span>
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
 

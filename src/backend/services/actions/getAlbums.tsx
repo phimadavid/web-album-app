@@ -44,7 +44,7 @@ export const useAlbumData = (albumId: string) => {
 
         const layoutValue = typeof layoutData === 'string'
           ? layoutData
-          : (layoutData?.layout || layoutData?.layoutType || 'single');
+          : (layoutData?.layout || layoutData?.layoutType || 'random');
 
         const mappedImages: Array<{ previewurl: string }> = imagesData.map(
           (img: ImageDataProps) => ({

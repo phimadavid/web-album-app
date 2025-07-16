@@ -46,7 +46,7 @@ const UploadedImagesGrid: React.FC<ImageGalleryProps> = ({ images, params }) => 
                 );
             }
 
-            router.push(`/layout/${params.id}`);
+            router.push(`/design/${params.id}`);
 
         } catch (error) {
             toast.error(

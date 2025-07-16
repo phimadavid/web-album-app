@@ -2469,7 +2469,6 @@ const AsideNavigation: React.FC<
     };
 
     const currentPageImages = getCurrentPageImages();
-    const isMultipleLayout: boolean = albumData?.layoutPage === 'multiple';
 
     const currentPageCaptions = generatedCaptions.filter(caption => {
       const frontPhotoIndex = (currentPage - 2) * 2;
