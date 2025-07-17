@@ -93,3 +93,187 @@ div {
     @apply bg-background text-foreground;
   }
 }
+
+/* 3D Mockup Styles */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.rotate-y-12 {
+  transform: rotateY(12deg);
+}
+
+/* Canvas Print Mockup */
+.canvas-mockup {
+  width: 280px;
+  height: 200px;
+  margin: 0 auto;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.canvas-frame {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #f8f8f8;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.canvas-frame::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #e8e8e8, #d0d0d0);
+  border-radius: 6px;
+  z-index: -1;
+}
+
+.bg-canvas-texture {
+  background-image: radial-gradient(
+      circle at 25% 25%,
+      rgba(255, 255, 255, 0.3) 0%,
+      transparent 50%
+    ),
+    radial-gradient(circle at 75% 75%, rgba(0, 0, 0, 0.1) 0%, transparent 50%);
+  background-size: 4px 4px;
+}
+
+/* Glass Print Mockup */
+.glass-mockup {
+  width: 280px;
+  height: 200px;
+  margin: 0 auto;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.glass-frame {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.glass-frame::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  pointer-events: none;
+}
+
+/* Aluminum Print Mockup */
+.aluminum-mockup {
+  width: 280px;
+  height: 200px;
+  margin: 0 auto;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.aluminum-frame {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 50%, #d0d0d0 100%);
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+
+.aluminum-frame::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 30%,
+    rgba(0, 0, 0, 0.1) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.bg-brushed-metal {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 20%,
+    rgba(0, 0, 0, 0.05) 40%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.1) 80%,
+    transparent 100%
+  );
+  background-size: 8px 100%;
+}
+
+/* Hover Effects */
+.canvas-mockup:hover {
+  transform: rotateY(8deg) rotateX(2deg);
+}
+
+.glass-mockup:hover {
+  transform: rotateY(8deg) rotateX(2deg);
+}
+
+.glass-mockup:hover .glass-frame {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.aluminum-mockup:hover {
+  transform: rotateY(8deg) rotateX(2deg);
+}
+
+.aluminum-mockup:hover .aluminum-frame {
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25), 0 5px 15px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .canvas-mockup,
+  .glass-mockup,
+  .aluminum-mockup {
+    width: 240px;
+    height: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .canvas-mockup,
+  .glass-mockup,
+  .aluminum-mockup {
+    width: 200px;
+    height: 140px;
+  }
+}

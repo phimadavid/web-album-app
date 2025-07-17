@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { baseConn } from "@/backend/connection";
 import registerSchema from "@/app/validation/register.schema";
 import { ValidationError } from "yup";
@@ -21,7 +20,6 @@ interface RegisterPayload {
 }
 
 const RegisterPage: React.FC = () => {
-    const router = useRouter();
     const [showPassword, setShowPassword] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
@@ -249,7 +247,13 @@ const RegisterPage: React.FC = () => {
                                 </button>
                             </div>
 
-                            <div className="text-center text-sm">
+                            <div className="text-center text-sm space-y-2">
+                                <p className="text-gray-600">
+                                    Already have an account?{" "}
+                                    <a href="/signin" className="text-blue-600 hover:text-blue-500 font-medium">
+                                        Sign in here
+                                    </a>
+                                </p>
                                 <p className="text-gray-600">
                                     By registering, you agree to our{" "}
                                     <a href="#" className="text-blue-600 hover:text-blue-500">

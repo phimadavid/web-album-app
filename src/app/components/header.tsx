@@ -18,7 +18,6 @@ import SigIn from '../signin/signin-component';
 import RegisterPage from '../register/register-component';
 import { withAuth } from '@/backend/withAuth';
 import Cart from './cart/cart';
-import { toast } from 'react-toastify';
 
 const Header: React.FC = () => {
   const { isAuthenticated, logout } = withAuth({
