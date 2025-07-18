@@ -117,7 +117,6 @@ const PhotoWallPage = () => {
 
     // State management
     const [isVisible, setIsVisible] = useState(false);
-    const [activeTab, setActiveTab] = useState<'generate' | 'gallery'>('generate');
     const [prompt, setPrompt] = useState('');
     const [selectedStyle, setSelectedStyle] = useState('modern');
     const [selectedProduct, setSelectedProduct] = useState<string>('canvas');
@@ -129,76 +128,36 @@ const PhotoWallPage = () => {
 
     // Add demo images for testing
     const addDemoImages = async () => {
+        if (!prompt.trim()) return;
+
         setIsGenerating(true);
 
         try {
-            const demoPrompts = [
-                'A serene mountain landscape with sunset colors, modern style, high quality, photo realistic, suitable for wall image',
-                'Abstract geometric patterns in vibrant colors, colorful style, high quality, photo realistic, suitable for wall image'
-            ];
+            // Create the custom prompt word by combining prompt and selected style
+            const customPromptWord = `${prompt}, ${selectedStyle} style, high quality, photo realistic, suitable for wall image`;
 
-            const demoImages: GeneratedImage[] = [];
+            console.log('Generating demo image with prompt:', customPromptWord);
+            const response = await generateTemplateImage(customPromptWord);
 
-            for (let i = 0; i < demoPrompts.length; i++) {
-                const prompt = demoPrompts[i];
-                const basePrompt = i === 0 ? 'A serene mountain landscape with sunset colors' : 'Abstract geometric patterns in vibrant colors';
+            if (response && response.length > 0) {
+                const demoImages: GeneratedImage[] = response.map((imageUrl: string, index: number) => {
+                    return {
+                        id: `demo_${Date.now()}_${index}`,
+                        url: imageUrl, // Base64 image URL from generateTemplateImage
+                        prompt: prompt,
+                        isLoading: false
+                    };
+                });
 
-                try {
-                    console.log(`Generating demo image ${i + 1}:`, prompt);
-                    const response = await generateTemplateImage(prompt);
-
-                    if (response && response.length > 0) {
-                        demoImages.push({
-                            id: `demo_${Date.now()}_${i}`,
-                            url: response[0], // Use first generated image
-                            prompt: basePrompt,
-                            isLoading: false
-                        });
-                    }
-                } catch (error) {
-                    console.error(`Error generating demo image ${i + 1}:`, error);
-                    // Continue with next image if one fails
-                }
-            }
-
-            if (demoImages.length > 0) {
+                console.log('Final processed demo images:', demoImages);
                 setGeneratedImages(prev => [...demoImages, ...prev]);
             } else {
-                // Fallback to original demo images if generation fails
-                const fallbackImages: GeneratedImage[] = [
-                    {
-                        id: 'demo_1',
-                        url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1024&h=1024&fit=crop',
-                        prompt: 'A serene mountain landscape with sunset colors',
-                        isLoading: false
-                    },
-                    {
-                        id: 'demo_2',
-                        url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1024&h=1024&fit=crop',
-                        prompt: 'Abstract geometric patterns in vibrant colors',
-                        isLoading: false
-                    }
-                ];
-                setGeneratedImages(fallbackImages);
+                console.error('No demo images generated');
+                alert('No demo images were generated. Please try again with a different prompt.');
             }
         } catch (error) {
             console.error('Error in addDemoImages:', error);
-            // Show fallback images on error
-            const fallbackImages: GeneratedImage[] = [
-                {
-                    id: 'demo_1',
-                    url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1024&h=1024&fit=crop',
-                    prompt: 'A serene mountain landscape with sunset colors',
-                    isLoading: false
-                },
-                {
-                    id: 'demo_2',
-                    url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1024&h=1024&fit=crop',
-                    prompt: 'Abstract geometric patterns in vibrant colors',
-                    isLoading: false
-                }
-            ];
-            setGeneratedImages(fallbackImages);
+            alert(`Error: ${error instanceof Error ? error.message : 'Unknown error occurred while generating demo images'}`);
         } finally {
             setIsGenerating(false);
         }
@@ -213,12 +172,10 @@ const PhotoWallPage = () => {
         { id: 'colorful', name: 'Colorful', description: 'Vibrant, bold colors' }
     ];
 
-    // Animation states
     useEffect(() => {
         setIsVisible(true);
     }, []);
 
-    // Generate AI images
     const handleGenerateImages = async () => {
         if (!prompt.trim()) return;
 
