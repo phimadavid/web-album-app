@@ -663,7 +663,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
   return (
     <>
-      <AsideNavigation />
       <div className="flex w-full flex-col">
         {/* Mobile Header */}
         <div className="lg:hidden bg-blue-50 p-4 flex items-center justify-between border-b">
@@ -1167,14 +1166,12 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       x: isAtBeginning ? '0%' : '100%',
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
       },
     }),
     open: {
       x: '50%',
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
       },
     },
   };
@@ -1184,14 +1181,12 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       x: 0,
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
       },
     },
     visible: (isLeft: boolean) => ({
       x: isLeft ? -180 : 180,
       transition: {
         duration: 0.5,
-        ease: 'easeInOut',
       },
     }),
   };
@@ -1201,14 +1196,12 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       rotateY: 0,
       transition: {
         duration: 0.7,
-        ease: [0.4, 0.0, 0.2, 1], // Custom easing for paper flip feel
       },
     },
     flipped: {
       rotateY: -180,
       transition: {
         duration: 0.7,
-        ease: [0.4, 0.0, 0.2, 1],
       },
     },
   };
