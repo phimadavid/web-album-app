@@ -46,8 +46,6 @@ import {
   Eye,
   Save,
 } from 'lucide-react';
-import OrderLink from '../components/order.link';
-import AsideNavigation from '../../components/aside.navigation';
 
 const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
   const paramsId = params.id;
