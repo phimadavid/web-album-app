@@ -31,6 +31,42 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
     const [promptWord, setPromptWord] = useState<string>('elegant');
     const [customPromptWord, setCustomPromptWord] = useState<string>('');
 
+    // New state for overlay control
+    const [overlayImageIndex, setOverlayImageIndex] = useState<{ [templateId: string]: number }>({});
+    const [overlaySettings, setOverlaySettings] = useState<{
+        [templateId: string]: {
+            size: number;
+            opacity: number;
+            position: 'center' | 'top' | 'bottom';
+        }
+    }>({});
+
+    // State for AI-generated overlay images (now defaults to AI mode)
+    const [overlayMode, setOverlayMode] = useState<'user' | 'ai'>('ai');
+    const [aiOverlayImages, setAiOverlayImages] = useState<{ [templateId: string]: string[] }>({});
+    const [aiOverlayPrompts, setAiOverlayPrompts] = useState<{ [templateId: string]: string[] }>({});
+    const [isGeneratingOverlay, setIsGeneratingOverlay] = useState<{ [templateId: string]: boolean }>({});
+    const [overlayPromptInput, setOverlayPromptInput] = useState<string>('');
+
+    // Default prompts for automatic AI overlay generation
+    const defaultOverlayPrompts = [
+        'people traveling together',
+        'friends bonding and laughing',
+        'family group smiling',
+        'couple enjoying vacation',
+        'people celebrating',
+        'friends having fun',
+        'group of travelers',
+        'people sharing memories',
+        'happy friends together',
+        'people on adventure',
+        'family bonding time',
+        'friends exploring',
+        'people enjoying life',
+        'group celebration',
+        'travel companions'
+    ];
+
     const [colorPalettes, setColorPalettes] = useState<string[][]>([
         ['#F8B195', '#F67280', '#C06C84', '#6C5B7B', '#355C7D'],
         ['#99B898', '#FECEAB', '#FF847C', '#E84A5F', '#2A363B'],
@@ -119,6 +155,144 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
 
         // For now, we'll just return the template image as a placeholder
         return templateImage;
+    };
+
+    // Function to cycle through overlay images
+    const cycleOverlayImage = (templateId: string, direction: 'next' | 'prev') => {
+        const currentIndex = overlayImageIndex[templateId] || 0;
+        let newIndex;
+
+        if (direction === 'next') {
+            newIndex = (currentIndex + 1) % Images.length;
+        } else {
+            newIndex = currentIndex === 0 ? Images.length - 1 : currentIndex - 1;
+        }
+
+        setOverlayImageIndex(prev => ({
+            ...prev,
+            [templateId]: newIndex
+        }));
+    };
+
+    // Function to get overlay settings for a template
+    const getOverlaySettings = (templateId: string) => {
+        return overlaySettings[templateId] || {
+            size: 75, // Default size percentage
+            opacity: 90, // Default opacity percentage
+            position: 'center' // Default position
+        };
+    };
+
+    // Function to update overlay settings
+    const updateOverlaySettings = (templateId: string, settings: Partial<typeof overlaySettings[string]>) => {
+        setOverlaySettings(prev => ({
+            ...prev,
+            [templateId]: {
+                ...getOverlaySettings(templateId),
+                ...settings
+            }
+        }));
+    };
+
+    // Function to get current overlay image for a template
+    const getCurrentOverlayImage = (templateId: string) => {
+        const currentIndex = overlayImageIndex[templateId] || 0;
+        if (overlayMode === 'ai') {
+            const aiImages = aiOverlayImages[templateId] || [];
+            if (aiImages.length > 0) {
+                return {
+                    previewUrl: aiImages[currentIndex % aiImages.length],
+                    s3Url: aiImages[currentIndex % aiImages.length],
+                    isAI: true
+                };
+            }
+        }
+        return Images[currentIndex];
+    };
+
+    // Function to generate AI overlay images
+    const generateAIOverlayImage = async (templateId: string, prompt: string) => {
+        if (!prompt.trim()) return;
+
+        setIsGeneratingOverlay(prev => ({ ...prev, [templateId]: true }));
+
+        try {
+            // Use the same HF service but with a different prompt focused on overlay elements
+            const overlayPrompt = `${prompt}, isolated subject, clean background, portrait, centered composition`;
+            const response = await generateTemplateImage(overlayPrompt);
+
+            if (response && response.length > 0) {
+                const newAIImage = response[0];
+
+                // Add the new AI image to the template's AI overlay images
+                setAiOverlayImages(prev => ({
+                    ...prev,
+                    [templateId]: [...(prev[templateId] || []), newAIImage]
+                }));
+
+                // Store the prompt used
+                setAiOverlayPrompts(prev => ({
+                    ...prev,
+                    [templateId]: [...(prev[templateId] || []), prompt]
+                }));
+
+                // If this is the first AI image for this template, reset the overlay index
+                if (!(templateId in aiOverlayImages) || aiOverlayImages[templateId].length === 0) {
+                    setOverlayImageIndex(prev => ({
+                        ...prev,
+                        [templateId]: 0
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error generating AI overlay image:', error);
+        } finally {
+            setIsGeneratingOverlay(prev => ({ ...prev, [templateId]: false }));
+        }
+    };
+
+    // Function to get total overlay image count for a template
+    const getTotalOverlayCount = (templateId: string) => {
+        if (overlayMode === 'ai') {
+            return (aiOverlayImages[templateId] || []).length;
+        }
+        return Images.length;
+    };
+
+    // Function to cycle through overlay images (updated for AI support)
+    const cycleOverlayImageUpdated = (templateId: string, direction: 'next' | 'prev') => {
+        const totalCount = getTotalOverlayCount(templateId);
+        if (totalCount === 0) return;
+
+        const currentIndex = overlayImageIndex[templateId] || 0;
+        let newIndex;
+
+        if (direction === 'next') {
+            newIndex = (currentIndex + 1) % totalCount;
+        } else {
+            newIndex = currentIndex === 0 ? totalCount - 1 : currentIndex - 1;
+        }
+
+        setOverlayImageIndex(prev => ({
+            ...prev,
+            [templateId]: newIndex
+        }));
+    };
+
+    // Function to automatically generate AI overlays for a template
+    const autoGenerateAIOverlays = async (templateId: string) => {
+        // Get a random prompt from the default prompts
+        const randomPrompt = defaultOverlayPrompts[Math.floor(Math.random() * defaultOverlayPrompts.length)];
+
+        // Generate 2-3 overlay images for each template automatically
+        const numberOfOverlays = Math.floor(Math.random() * 2) + 2; // 2 or 3 overlays
+
+        for (let i = 0; i < numberOfOverlays; i++) {
+            const prompt = i === 0 ? randomPrompt : defaultOverlayPrompts[Math.floor(Math.random() * defaultOverlayPrompts.length)];
+            await generateAIOverlayImage(templateId, prompt);
+            // Add small delay between generations to avoid overwhelming the API
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
     };
 
     // Analyze event tags and set appropriate theme
@@ -315,6 +489,11 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
                     setTemplates(prevTemplates =>
                         prevTemplates.map(t => t.id === template.id ? template : t)
                     );
+
+                    // Automatically generate AI overlays for this template
+                    if (overlayMode === 'ai') {
+                        autoGenerateAIOverlays(template.id);
+                    }
                 }
             }
 
@@ -383,6 +562,11 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
                 // Select the new template
                 setSelectedTemplate(newTemplateId);
                 setCustomColors(template.colors);
+
+                // Automatically generate AI overlays for this template
+                if (overlayMode === 'ai') {
+                    autoGenerateAIOverlays(template.id);
+                }
             } else {
                 // Remove placeholder if generation failed
                 setTemplates(prev => prev.filter(t => t.id !== newTemplateId));
@@ -479,6 +663,11 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
             setSelectedTemplate(newTemplateId);
             setCustomColors(template.colors);
 
+            // Automatically generate AI overlays for this template
+            if (overlayMode === 'ai') {
+                autoGenerateAIOverlays(template.id);
+            }
+
             // Reset the custom prompt input after successful generation
             setCustomPromptWord('');
 
@@ -545,9 +734,9 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
     return (
         <div>
             <div className='w-full gap-4'>
-                <div className="mb-6 p-4 h-24 row-start-1 col-span-4">
+                <div className="mb-6 p-4 h-auto row-start-1 col-span-4">
                     <h3 className="text-xl font-medium mb-2 py-2 text-end">Generate Prompt Custom Book Cover Design</h3>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mb-4">
                         <input
                             type="text"
                             value={customPromptWord}
@@ -564,6 +753,15 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
                             {isTranslating ? 'Translating...' : 'Generate'}
                         </button>
                     </div>
+
+                    {/* AI Overlay Info */}
+                    <div className="border-t pt-4 mt-4">
+                        <div className="text-end mb-2">
+                            <p className="text-sm text-purple-600 font-medium">✨ AI Overlays Enabled</p>
+                            <p className="text-xs text-gray-500">Automatically generating people, travel, and bonding overlays for your templates</p>
+                        </div>
+                    </div>
+
                     <p className="text-xs text-end text-gray-500 mt-2">
                         {translatedPromptWord ?
                             `Translation: "${customPromptWord}" → "${translatedPromptWord}"` :
@@ -654,24 +852,127 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
                                                     </div>
                                                 ) : template.image ? (
                                                     <div className="absolute w-full inset-0 borders">
+                                                        {/* Background layer - Hugging Face generated image */}
+                                                        <div className="absolute inset-0 z-10">
+                                                            <img
+                                                                src={template.image}
+                                                                alt={`${template.name} background`}
+                                                                className="w-full h-full object-cover bg-white blur-[0.8px] brightness-95 contrast-105 saturate-110"
+                                                                onLoad={() => handleImageLoad(template.id)}
+                                                                style={{
+                                                                    border: '3px solid #bbb',
+                                                                    boxShadow: '3px 3px 12px rgba(0,0,0,0.25)',
+                                                                    filter: 'blur(0.8px) brightness(0.95) contrast(1.05)',
+                                                                }}
+                                                            />
+                                                        </div>
+
+                                                        {/* Overlay image layer - User's or AI images on top */}
+                                                        {(() => {
+                                                            const settings = getOverlaySettings(template.id);
+                                                            let overlayImage = null;
+                                                            let hasValidOverlay = false;
+
+                                                            if (overlayMode === 'ai') {
+                                                                const aiImages = aiOverlayImages[template.id] || [];
+                                                                if (aiImages.length > 0) {
+                                                                    const currentIndex = overlayImageIndex[template.id] || 0;
+                                                                    overlayImage = {
+                                                                        previewUrl: aiImages[currentIndex % aiImages.length],
+                                                                        s3Url: aiImages[currentIndex % aiImages.length],
+                                                                        isAI: true
+                                                                    };
+                                                                    hasValidOverlay = true;
+                                                                }
+                                                            } else if (overlayMode === 'user' && Images && Images.length > 0) {
+                                                                const currentIndex = overlayImageIndex[template.id] || 0;
+                                                                overlayImage = Images[currentIndex];
+                                                                hasValidOverlay = true;
+                                                            }
+
+                                                            if (!hasValidOverlay || !overlayImage) return null;
+
+                                                            const positionClass = settings.position === 'top' ? 'items-start pt-4' :
+                                                                settings.position === 'bottom' ? 'items-end pb-4' :
+                                                                    'items-center';
+
+                                                            return (
+                                                                <div className={`absolute inset-0 z-20 flex justify-center ${positionClass}`}>
+                                                                    <div
+                                                                        className="relative overflow-hidden shadow-lg"
+                                                                        style={{
+                                                                            width: `${settings.size}%`,
+                                                                            height: `${settings.size}%`,
+                                                                            maxWidth: '280px',
+                                                                            maxHeight: '200px'
+                                                                        }}
+                                                                    >
+                                                                        <img
+                                                                            src={overlayImage.previewUrl || overlayImage.s3Url}
+                                                                            alt="Overlay image"
+                                                                            className="w-full h-full object-cover"
+                                                                            style={{
+                                                                                opacity: settings.opacity / 100,
+                                                                                border: '2px solid rgba(255,255,255,0.8)',
+                                                                                boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                                                                            }}
+                                                                        />
+
+                                                                        {/* Overlay controls - show when there are multiple overlays */}
+                                                                        {getTotalOverlayCount(template.id) > 1 && (
+                                                                            <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-between p-2">
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        cycleOverlayImageUpdated(template.id, 'prev');
+                                                                                    }}
+                                                                                    className="bg-black bg-opacity-50 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-70"
+                                                                                >
+                                                                                    &#8249;
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        cycleOverlayImageUpdated(template.id, 'next');
+                                                                                    }}
+                                                                                    className="bg-black bg-opacity-50 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-70"
+                                                                                >
+                                                                                    &#8250;
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* AI Overlay Generation Button for individual templates */}
+                                                                        {overlayMode === 'ai' && (
+                                                                            <div className="absolute bottom-2 left-2 opacity-0 hover:opacity-100 transition-opacity duration-200">
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        const prompt = `${template.style.toLowerCase()} ${eventCategory.toLowerCase()} overlay`;
+                                                                                        generateAIOverlayImage(template.id, prompt);
+                                                                                    }}
+                                                                                    className="bg-purple-600 bg-opacity-90 text-white text-xs px-2 py-1 rounded hover:bg-purple-700"
+                                                                                    disabled={isGeneratingOverlay[template.id]}
+                                                                                >
+                                                                                    + AI Overlay
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Optional: Add a subtle gradient overlay for better text visibility */}
+                                                                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black opacity-20"></div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
+
+                                                        {/* Book spine effect */}
                                                         <div
                                                             className="absolute top-0 left-0 bg-transparent w-[10px] blur-[1px] brightness-50 h-full brightness-60 z-30"
                                                             style={{
                                                                 border: '1px groove #666',
                                                             }}
                                                         ></div>
-
-                                                        <img
-                                                            src={template.image}
-                                                            alt={`${template.name} background`}
-                                                            className="w-full h-full object-cover bg-white z-50 blur-[0.8px] brightness-95 contrast-105 saturate-110"
-                                                            onLoad={() => handleImageLoad(template.id)}
-                                                            style={{
-                                                                border: '3px solid #bbb',
-                                                                boxShadow: '3px 3px 12px rgba(0,0,0,0.25)',
-                                                                filter: 'blur(0.8px) brightness(0.95) contrast(1.05)',
-                                                            }}
-                                                        />
                                                     </div>
                                                 ) : (
                                                     <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
