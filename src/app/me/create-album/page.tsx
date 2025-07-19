@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AlertCircle, Check, Upload, ImageIcon, Book } from 'lucide-react';
 import Book3D from '../../terms/components/book3d';
-import AsideNavigation from '../components/aside.navigation';
 import { withAuth } from '@/backend/withAuth';
 
 interface ImageData {
@@ -187,179 +186,171 @@ export default function CreateAlbumPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            {/* Sidebar */}
-            <AsideNavigation onLogout={logout} />
+        <div className="min-h-screen sm:min-h-[650px] relative bg-gray-50">
+            {/* Background Image */}
+            {backgroundImage && (
+                <div className="absolute inset-0 w-full h-full overflow-hidden">
+                    <Image
+                        src={backgroundImage.imageUrl}
+                        alt="Background"
+                        fill
+                        className="object-cover blur-sm brightness-40"
+                        priority
+                    />
+                </div>
+            )}
 
-            {/* Main Content */}
-            <div className="flex-1 ml-64">
-                <div className="min-h-screen sm:min-h-[650px] relative bg-gray-50">
-                    {/* Background Image */}
-                    {backgroundImage && (
-                        <div className="absolute inset-0 w-full h-full overflow-hidden">
-                            <Image
-                                src={backgroundImage.imageUrl}
-                                alt="Background"
-                                fill
-                                className="object-cover blur-sm brightness-40"
-                                priority
-                            />
-                        </div>
-                    )}
+            <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
+                <div className="max-w-4xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center mb-8"
+                    >
+                        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+                            Create Your Album
+                        </h1>
+                        <p className="text-white/80 text-lg">
+                            Design a beautiful album to preserve your memories
+                        </p>
+                    </motion.div>
 
-                    <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
-                        <div className="max-w-4xl mx-auto">
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Album Name Section */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            <Card className="p-6 bg-white/90 backdrop-blur-sm">
+                                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                                    <Book className="mr-2 h-5 w-5 text-blue-600" />
+                                    Album Details
+                                </h2>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Album Name *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={albumName}
+                                            onChange={(e) => setAlbumName(e.target.value)}
+                                            placeholder="Enter your album name"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </Card>
+                        </motion.div>
+
+                        {/* Format Selection */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            <Card className="p-6 bg-white/90 backdrop-blur-sm">
+                                <h2 className="text-xl font-semibold mb-4 flex items-center">
+                                    <ImageIcon className="mr-2 h-5 w-5 text-blue-600" />
+                                    Select Album Format
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {albumFormats.map((format) => (
+                                        <div
+                                            key={format.id}
+                                            onClick={() => setSelectedFormat(format)}
+                                            className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedFormat?.id === format.id
+                                                ? 'border-blue-500 bg-blue-50'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h3 className="font-medium text-gray-900">{format.name}</h3>
+                                                {selectedFormat?.id === format.id && (
+                                                    <Check className="h-5 w-5 text-blue-600" />
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-600 mb-2">{format.description}</p>
+                                            <div className="text-xs text-gray-500">
+                                                <p>Dimensions: {format.dimensions}</p>
+                                                <p>Photo Size: {format.photosize}</p>
+                                                <p>Cover: {format.coverType}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        </motion.div>
+
+                        {/* Terms and Conditions */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            <Card className="p-6 bg-white/90 backdrop-blur-sm">
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="terms"
+                                        checked={termsAccepted}
+                                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                    <label htmlFor="terms" className="text-sm text-gray-700">
+                                        I accept the{' '}
+                                        <a href="/terms" className="text-blue-600 hover:text-blue-800">
+                                            terms and conditions
+                                        </a>
+                                    </label>
+                                </div>
+                            </Card>
+                        </motion.div>
+
+                        {/* Error Message */}
+                        {error && (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="text-center mb-8"
+                                className="flex items-center p-4 bg-red-50 border border-red-200 rounded-md"
                             >
-                                <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-                                    Create Your Album
-                                </h1>
-                                <p className="text-white/80 text-lg">
-                                    Design a beautiful album to preserve your memories
-                                </p>
+                                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                                <span className="text-red-700">{error}</span>
                             </motion.div>
+                        )}
 
-                            <form onSubmit={handleSubmit} className="space-y-8">
-                                {/* Album Name Section */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.1 }}
-                                >
-                                    <Card className="p-6 bg-white/90 backdrop-blur-sm">
-                                        <h2 className="text-xl font-semibold mb-4 flex items-center">
-                                            <Book className="mr-2 h-5 w-5 text-blue-600" />
-                                            Album Details
-                                        </h2>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Album Name *
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={albumName}
-                                                    onChange={(e) => setAlbumName(e.target.value)}
-                                                    placeholder="Enter your album name"
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                    </Card>
-                                </motion.div>
-
-                                {/* Format Selection */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.2 }}
-                                >
-                                    <Card className="p-6 bg-white/90 backdrop-blur-sm">
-                                        <h2 className="text-xl font-semibold mb-4 flex items-center">
-                                            <ImageIcon className="mr-2 h-5 w-5 text-blue-600" />
-                                            Select Album Format
-                                        </h2>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            {albumFormats.map((format) => (
-                                                <div
-                                                    key={format.id}
-                                                    onClick={() => setSelectedFormat(format)}
-                                                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedFormat?.id === format.id
-                                                        ? 'border-blue-500 bg-blue-50'
-                                                        : 'border-gray-200 hover:border-gray-300'
-                                                        }`}
-                                                >
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <h3 className="font-medium text-gray-900">{format.name}</h3>
-                                                        {selectedFormat?.id === format.id && (
-                                                            <Check className="h-5 w-5 text-blue-600" />
-                                                        )}
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 mb-2">{format.description}</p>
-                                                    <div className="text-xs text-gray-500">
-                                                        <p>Dimensions: {format.dimensions}</p>
-                                                        <p>Photo Size: {format.photosize}</p>
-                                                        <p>Cover: {format.coverType}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </Card>
-                                </motion.div>
-
-                                {/* Terms and Conditions */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.3 }}
-                                >
-                                    <Card className="p-6 bg-white/90 backdrop-blur-sm">
-                                        <div className="flex items-center space-x-2">
-                                            <input
-                                                type="checkbox"
-                                                id="terms"
-                                                checked={termsAccepted}
-                                                onChange={(e) => setTermsAccepted(e.target.checked)}
-                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                            />
-                                            <label htmlFor="terms" className="text-sm text-gray-700">
-                                                I accept the{' '}
-                                                <a href="/terms" className="text-blue-600 hover:text-blue-800">
-                                                    terms and conditions
-                                                </a>
-                                            </label>
-                                        </div>
-                                    </Card>
-                                </motion.div>
-
-                                {/* Error Message */}
-                                {error && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="flex items-center p-4 bg-red-50 border border-red-200 rounded-md"
-                                    >
-                                        <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                                        <span className="text-red-700">{error}</span>
-                                    </motion.div>
+                        {/* Submit Button */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="flex justify-center"
+                        >
+                            <Button
+                                type="submit"
+                                disabled={isCreating}
+                                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isCreating ? (
+                                    <>
+                                        <FallingLines
+                                            color="#ffffff"
+                                            width="20"
+                                            visible={true}
+                                            aria-label="creating-album"
+                                        />
+                                        <span className="ml-2">Creating Album...</span>
+                                    </>
+                                ) : (
+                                    'Create Album'
                                 )}
-
-                                {/* Submit Button */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.4 }}
-                                    className="flex justify-center"
-                                >
-                                    <Button
-                                        type="submit"
-                                        disabled={isCreating}
-                                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isCreating ? (
-                                            <>
-                                                <FallingLines
-                                                    color="#ffffff"
-                                                    width="20"
-                                                    visible={true}
-                                                    aria-label="creating-album"
-                                                />
-                                                <span className="ml-2">Creating Album...</span>
-                                            </>
-                                        ) : (
-                                            'Create Album'
-                                        )}
-                                    </Button>
-                                </motion.div>
-                            </form>
-                        </div>
-                    </main>
+                            </Button>
+                        </motion.div>
+                    </form>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

@@ -1,5 +1,7 @@
 "use client"
 import { withAuthLayout } from '@/backend/withAuth'
+import { withAuth } from '@/backend/withAuth'
+import AsideNavigation from './components/aside.navigation'
 import React, { ReactNode } from 'react'
 
 type ProtectedLayoutProps = {
@@ -9,10 +11,18 @@ type ProtectedLayoutProps = {
 const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({
   children,
 }: ProtectedLayoutProps) => {
+  const { logout } = withAuth({
+    role: 'user',
+    redirectTo: '/signin',
+  });
 
   return (
-    <div className="protected-layout">
-      <main>{children}</main>
+    <div className="min-h-screen bg-gray-50 flex">
+      <AsideNavigation onLogout={logout} />
+
+      <div className="flex-1">
+        <main>{children}</main>
+      </div>
     </div>
   )
 }

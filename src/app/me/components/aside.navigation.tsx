@@ -12,7 +12,7 @@ const AsideNavigation: React.FC<AsideNavigationProps> = ({ onLogout }) => {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 fixed h-full bg-white shadow-lg">
+    <aside className="w-64 sticky top-0 min-h-screen bg-white shadow-lg">
       <div className="p-4 flex flex-col h-full">
         {/* Logo/Title */}
         <div className="mb-8">

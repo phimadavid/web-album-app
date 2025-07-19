@@ -34,7 +34,6 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { FallingLines } from "react-loader-spinner";
-import AsideNavigation from "../components/aside.navigation";
 import { withAuth } from "@/backend/withAuth";
 import bookHand from '../../../../public/images/book-hand.png';
 import { useAlbumData } from '@/backend/services/actions/getAlbums';
@@ -693,24 +692,22 @@ const PreviewPage = () => {
 
   if (!albumId) {
     return (
-      <>  <AsideNavigation onLogout={logout} />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <Card className="p-8 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              No Album Selected
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Please select an album to preview from your dashboard.
-            </p>
-            <Button
-              onClick={handleBackToDashboard}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Go to Dashboard
-            </Button>
-          </Card>
-        </div>
-      </>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            No Album Selected
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Please select an album to preview from your dashboard.
+          </p>
+          <Button
+            onClick={handleBackToDashboard}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Go to Dashboard
+          </Button>
+        </Card>
+      </div>
     );
   }
 
@@ -741,223 +738,215 @@ const PreviewPage = () => {
   const { photoWidth, photoHeight } = getImagePixel();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <AsideNavigation onLogout={logout} />
-
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        <div className="flex w-full flex-col">
-          {/* Header */}
-          <div className="bg-white shadow-sm border-b p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900">
-                    {AlbumBookName || 'Album Preview'}
-                  </h1>
-                  <p className="text-sm text-gray-500">
-                    Preview your album layout and design
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={handleEditAlbum}
-                  className="flex items-center space-x-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  <span>Edit Album</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleShareAlbum}
-                  className="flex items-center space-x-2"
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span>Share</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleDownloadAlbum}
-                  className="flex items-center space-x-2"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Download</span>
-                </Button>
-              </div>
+    <div className="flex w-full flex-col">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {AlbumBookName || 'Album Preview'}
+              </h1>
+              <p className="text-sm text-gray-500">
+                Preview your album layout and design
+              </p>
             </div>
           </div>
-
-          <div className="flex flex-col lg:flex-row">
-            {/* Main Content */}
-            <div className="flex-1">
-              {isRefreshing && isToLoading && (
-                <div className="flex items-center justify-center text-blue-600 p-4">
-                  <RefreshCw size={16} className="animate-spin mr-2" />
-                  <span className="text-sm">Refreshing...</span>
-                </div>
-              )}
-
-              <motion.div>
-                {isLayoutChanging || isRefreshing || isToLoading ? (
-                  <Loading />
-                ) : (
-                  <div className="p-6">
-                    {/* Preview content - Using FlippingBook component from edit folder */}
-                    {albumData && (
-                      <FlippingBook
-                        coverColor="#8B4513"
-                        albumData={albumData}
-                        photoWidth={photoWidth}
-                        photoHeight={photoHeight}
-                        width={width}
-                        height={height}
-                        coverImage={albumData?.bookDesign}
-                        lastPhoto={lastPhoto}
-                        lastPhotoUrl={lastPhotoUrl}
-                        numberOfImages={numberOfImage}
-                        onPageChange={handlePageChange}
-                        key={albumData?.layoutPage || 'default'}
-                        isLayoutChanging={isLayoutChanging}
-                        pageBackgrounds={pageBackgrounds}
-                        pageLayouts={pageLayouts}
-                        handleTextContentSave={async () => { }}
-                        handleOrderNow={handleOrderNow}
-                      />
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            </div>
-
-            {/* Preview-specific sidebar - simplified */}
-            <div className={`${showAsideNavigation ? 'block' : 'hidden'} max-w-96 lg:hidden`}>
-              <div className="bg-white border-l border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Preview Tools</h3>
-                  <button
-                    onClick={() => setShowAsideNavigation(false)}
-                    className="p-2 rounded-full hover:bg-gray-100"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  <Button
-                    onClick={handleEditAlbum}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center"
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit Album
-                  </Button>
-                  <Button
-                    onClick={handleBackToDashboard}
-                    variant="outline"
-                    className="w-full flex items-center justify-center"
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Dashboard
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={handleEditAlbum}
+              className="flex items-center space-x-2"
+            >
+              <Edit className="h-4 w-4" />
+              <span>Edit Album</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleShareAlbum}
+              className="flex items-center space-x-2"
+            >
+              <Share2 className="h-4 w-4" />
+              <span>Share</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDownloadAlbum}
+              className="flex items-center space-x-2"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download</span>
+            </Button>
           </div>
-
-          {/* Mobile Overlay */}
-          {showAsideNavigation && (
-            <div
-              className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-              onClick={() => setShowAsideNavigation(false)}
-            />
-          )}
-
-          {/* Add Photos Modal */}
-          <AnimatePresence>
-            {showAddPhotosModal && (
-              <AddPhotosModal
-                params={{ id: albumId }}
-                isOpen={showAddPhotosModal}
-                onClose={() => setShowAddPhotosModal(false)}
-                onPhotosSaved={handlePhotosSaved}
-              />
-            )}
-          </AnimatePresence>
-
-          {/* Order Modal */}
-          <OrderModal
-            isOpen={showOrderModal}
-            onClose={() => setShowOrderModal(false)}
-            albumId={albumId}
-            albumName={AlbumBookName || 'Album'}
-            onAddToCart={handleAddToCart}
-          />
-
-          {/* Cart */}
-          <Cart
-            isOpen={showCart}
-            onClose={() => setShowCart(false)}
-            onCheckout={handleCheckout}
-          />
-
-          {/* Caption Modal */}
-          <AnimatePresence>
-            {showCaptionModal && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="fixed inset-0 flex items-center justify-center z-30 p-4"
-              >
-                <div
-                  className="absolute inset-0 bg-black bg-opacity-50"
-                  onClick={() => setShowCaptionModal(false)}
-                ></div>
-                <motion.div
-                  className="relative bg-white rounded-lg shadow-xl w-full max-w-md sm:max-w-lg lg:max-w-xl p-6 z-70 max-h-[90vh] overflow-y-auto"
-                  initial={{ scale: 0.95 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0.95 }}
-                >
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Under Testing and Development
-                    </h3>
-                    <button
-                      onClick={() => setShowCaptionModal(false)}
-                      className="text-gray-500 hover:text-gray-700 transition-colors"
-                      aria-label="Close"
-                    >
-                      <SquareX size={25} className="mr-2 text-red-600" />
-                    </button>
-                  </div>
-
-                  <NoteFeature description="This feature is currently in development and testing phase." />
-
-                  <div className="text-gray-600 mb-6">
-                    <p>
-                      Our development team is working on implementing the photo
-                      upload functionality. This feature will allow you to add
-                      caption in the images to your album.
-                    </p>
-                    <p className="mt-2">Expected completion: Soon</p>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => setShowCaptionModal(false)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Got it
-                    </button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
+
+      <div className="flex flex-col lg:flex-row">
+        {/* Main Content */}
+        <div className="flex-1">
+          {isRefreshing && isToLoading && (
+            <div className="flex items-center justify-center text-blue-600 p-4">
+              <RefreshCw size={16} className="animate-spin mr-2" />
+              <span className="text-sm">Refreshing...</span>
+            </div>
+          )}
+
+          <motion.div>
+            {isLayoutChanging || isRefreshing || isToLoading ? (
+              <Loading />
+            ) : (
+              <div className="p-6">
+                {/* Preview content - Using FlippingBook component from edit folder */}
+                {albumData && (
+                  <FlippingBook
+                    coverColor="#8B4513"
+                    albumData={albumData}
+                    photoWidth={photoWidth}
+                    photoHeight={photoHeight}
+                    width={width}
+                    height={height}
+                    coverImage={albumData?.bookDesign}
+                    lastPhoto={lastPhoto}
+                    lastPhotoUrl={lastPhotoUrl}
+                    numberOfImages={numberOfImage}
+                    onPageChange={handlePageChange}
+                    key={albumData?.layoutPage || 'default'}
+                    isLayoutChanging={isLayoutChanging}
+                    pageBackgrounds={pageBackgrounds}
+                    pageLayouts={pageLayouts}
+                    handleTextContentSave={async () => { }}
+                    handleOrderNow={handleOrderNow}
+                  />
+                )}
+              </div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* Preview-specific sidebar - simplified */}
+        <div className={`${showAsideNavigation ? 'block' : 'hidden'} max-w-96 lg:hidden`}>
+          <div className="bg-white border-l border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Preview Tools</h3>
+              <button
+                onClick={() => setShowAsideNavigation(false)}
+                className="p-2 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <Button
+                onClick={handleEditAlbum}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Album
+              </Button>
+              <Button
+                onClick={handleBackToDashboard}
+                variant="outline"
+                className="w-full flex items-center justify-center"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Overlay */}
+      {showAsideNavigation && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setShowAsideNavigation(false)}
+        />
+      )}
+
+      {/* Add Photos Modal */}
+      <AnimatePresence>
+        {showAddPhotosModal && (
+          <AddPhotosModal
+            params={{ id: albumId }}
+            isOpen={showAddPhotosModal}
+            onClose={() => setShowAddPhotosModal(false)}
+            onPhotosSaved={handlePhotosSaved}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Order Modal */}
+      <OrderModal
+        isOpen={showOrderModal}
+        onClose={() => setShowOrderModal(false)}
+        albumId={albumId}
+        albumName={AlbumBookName || 'Album'}
+        onAddToCart={handleAddToCart}
+      />
+
+      {/* Cart */}
+      <Cart
+        isOpen={showCart}
+        onClose={() => setShowCart(false)}
+        onCheckout={handleCheckout}
+      />
+
+      {/* Caption Modal */}
+      <AnimatePresence>
+        {showCaptionModal && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 flex items-center justify-center z-30 p-4"
+          >
+            <div
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setShowCaptionModal(false)}
+            ></div>
+            <motion.div
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-md sm:max-w-lg lg:max-w-xl p-6 z-70 max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Under Testing and Development
+                </h3>
+                <button
+                  onClick={() => setShowCaptionModal(false)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                  aria-label="Close"
+                >
+                  <SquareX size={25} className="mr-2 text-red-600" />
+                </button>
+              </div>
+
+              <NoteFeature description="This feature is currently in development and testing phase." />
+
+              <div className="text-gray-600 mb-6">
+                <p>
+                  Our development team is working on implementing the photo
+                  upload functionality. This feature will allow you to add
+                  caption in the images to your album.
+                </p>
+                <p className="mt-2">Expected completion: Soon</p>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowCaptionModal(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Got it
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
