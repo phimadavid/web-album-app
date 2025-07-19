@@ -5,6 +5,7 @@ import ImageAlbum from "./../../../public/images/image-album.jpg"
 import Image from 'next/image';
 import { generateTemplateImage } from '@/lib/services/hf.generate.template';
 import RegisterPage from '@/app/register/register-component';
+import axios from 'axios';
 
 // Types
 type PhotoCategory = {
@@ -126,6 +127,49 @@ const PhotoWallPage = () => {
     const [showPricing, setShowPricing] = useState(false);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
 
+    // Function to detect if text contains non-English characters
+    const containsNonEnglishChars = (text: string): boolean => {
+        // This regex matches characters outside basic Latin alphabet, numbers, and common punctuation
+        const nonEnglishRegex = /[^\x00-\x7F]/;
+        return nonEnglishRegex.test(text);
+    };
+
+    // Function to detect language - could be expanded in the future
+    const detectLanguage = (text: string): string => {
+        // A simple check for Hebrew characters
+        const hebrewChars = /[\u0590-\u05FF]/;
+        if (hebrewChars.test(text)) {
+            return 'he_IL';
+        }
+
+        // Default to auto-detection (which the model will handle)
+        return 'auto';
+    };
+
+    // Function to translate text to English
+    const translateToEnglish = async (text: string): Promise<string> => {
+        if (!text.trim()) return '';
+
+        try {
+            // Call translation API
+            const response = await axios.post('/api/translate', {
+                text: text,
+                targetLanguage: 'en'
+            });
+
+            if (response.data && response.data.translatedText) {
+                return response.data.translatedText;
+            }
+
+            // Fallback in case translation fails
+            return text;
+        } catch (error) {
+            console.error('Translation error:', error);
+            // Return original text if translation fails
+            return text;
+        }
+    };
+
     // Add demo images for testing
     const addDemoImages = async () => {
         if (!prompt.trim()) return;
@@ -182,8 +226,21 @@ const PhotoWallPage = () => {
         setIsGenerating(true);
 
         try {
+            let promptToUse = prompt.trim();
+
+            // Check if the prompt contains non-English characters
+            if (containsNonEnglishChars(promptToUse)) {
+                // Translate the prompt to English
+                const translated = await translateToEnglish(promptToUse);
+
+                // If translation is empty or failed somehow, fall back to original text
+                promptToUse = translated.trim() ? translated : promptToUse;
+
+                console.log(`Translated prompt: "${prompt}" → "${promptToUse}"`);
+            }
+
             // Create the custom prompt word by combining prompt and selected style
-            const customPromptWord = `${prompt}, ${selectedStyle} style, high quality, photo realistic, suitable for wall image`;
+            const customPromptWord = `${promptToUse}, ${selectedStyle} style, high quality, photo realistic, suitable for wall image`;
 
             // Use the generateTemplateImage function
             const response = await generateTemplateImage(customPromptWord);
