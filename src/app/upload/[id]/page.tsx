@@ -5,6 +5,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { EnhancedFile } from "@/backend/types/image";
 
 import UploadedImagesGrid from "./components/uploaded.images";
+import { UploadProgressOverlay } from "../components/UploadProgressOverlay";
+import { useUploadQueue } from "../hooks/useUploadQueue";
 
 import { organizeImagesWithAI } from './helper/analyser.function';
 import { inferLocationFromTimeZone } from "@/backend/helpers/inferlocation";
@@ -22,10 +24,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   const [suggestedOrganization, setSuggestedOrganization] = useState<string>("none");
 
   const [error, setError] = useState<string>("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadedImagesStatus, setUploadedImagesStatus] = useState<number[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [processingPhase, setProcessingPhase] = useState<
     "idle" | "extracting" | "analyzing" | "organizing" | "complete"
   >("idle");
@@ -36,6 +35,28 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   const [processingProgress, setProcessingProgress] = useState<number>();
 
   const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+
+  // Upload queue integration
+  const uploadQueue = useUploadQueue({
+    albumId: params.id,
+    maxConcurrent: 3,
+    maxRetries: 3,
+    onAllComplete: () => {
+      // Update album status and navigate to next step
+      fetch(`/api/album/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "in_progress" }),
+      });
+      setUploadComplete(true);
+    },
+    onItemComplete: (item) => {
+      console.log("Upload completed for:", item.file.filename);
+    },
+    onItemError: (item) => {
+      console.error("Upload failed for:", item.file.filename, item.error);
+    },
+  });
 
   useEffect(() => {
     if (organizedImages.length === 0) return;
@@ -214,9 +235,15 @@ export default function UploadPage({ params }: { params: { id: string } }) {
       setProcessingProgress(95);
       setOrganizedImages(organizedFiles);
 
-      // PHASE 4: COMPLETE
+      // PHASE 4: COMPLETE - Auto-start upload
       setProcessingPhase("complete");
       setProcessingProgress(100);
+
+      // Automatically start uploading the organized images
+      setTimeout(() => {
+        uploadQueue.addToQueue(organizedFiles);
+        uploadQueue.startUploads();
+      }, 1000); // Small delay to show completion
 
     } catch (err) {
       console.error("Error in batch processing:", err);
@@ -361,111 +388,11 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   }, [uploadedImages.length]); // --> , MAX_IMAGES
 
   const handleUploadConfirmed = async () => {
-    setUploading(true);
     setError("");
-    setUploadProgress(0);
-    setUploadedImagesStatus([]);
 
-    try {
-      const formData = new FormData();
-
-      const metadataMap = Object.fromEntries(
-        organizedImages.map((file, index) => [
-          index,
-          {
-            preview: file.preview,
-            captureDate: file.metadata?.captureDate,
-            gpsLocation: file.metadata?.gpsLocation,
-            eventGroup: file.metadata?.eventGroup,
-            caption: file.metadata?.caption,
-            event_tags: file.metadata?.eventGroupTags,
-            locationName: file.metadata?.inferredLocation?.region,
-            height: file.height,
-            width: file.width
-          }
-        ])
-      );
-
-      formData.append("albumId", params.id);
-      formData.append("metadata", JSON.stringify(metadataMap));
-
-      // CRITICAL FIX: Append the original File objects, not the enhanced objects
-      for (let i = 0; i < organizedImages.length; i++) {
-        const enhancedFile = organizedImages[i];
-
-        // Get the original File object
-        if (enhancedFile.originalFile instanceof File) {
-          formData.append(`images[${i}]`, enhancedFile.originalFile); // --> If you have a reference to the original File, use it
-        } else if (enhancedFile instanceof File) {
-          formData.append(`images[${i}]`, enhancedFile); // --> If enhancedFile itself is a File (extended File)
-        } else if ((enhancedFile as EnhancedFile).preview !== undefined && (enhancedFile as EnhancedFile).preview?.startsWith('blob:')) {
-          try {
-            const enhancedFileWithPreview = enhancedFile as EnhancedFile; // ---> If you have a blob URL, fetch the blob and append it
-            if (!enhancedFileWithPreview.preview) {
-              throw new Error(`No preview URL available for image ${i}`);
-            }
-            const response = await fetch(enhancedFileWithPreview.preview);
-            const blob = await response.blob();
-            formData.append(`images[${i}]`, blob, (enhancedFile as EnhancedFile).name || `image-${i}.jpg`);
-          } catch (error) {
-            console.error(`Failed to fetch blob for image ${i}:`, error);
-            throw new Error(`Failed to process image ${i}`);
-          }
-        } else {
-          console.error(`Image ${i} is not a File object and has no preview URL`); // --> If all else fails, try to convert to a Blob
-          throw new Error(`Cannot process image ${i}: invalid format`);
-        }
-      }
-
-      const totalImages = organizedImages.length;
-
-      let uploadedCount = 0;
-
-      const progressInterval = setInterval(() => {
-        if (uploadedCount < totalImages) {
-          uploadedCount++;
-          const newProgress = Math.floor((uploadedCount / totalImages) * 100);
-          setUploadProgress(newProgress);
-          setUploadedImagesStatus(prev => [...prev, uploadedCount - 1]);
-
-          if (uploadedCount === totalImages) {
-            clearInterval(progressInterval);
-            setTimeout(() => {
-              finalizeUpload(formData);
-            }, 500);
-          }
-        }
-      }, 300);
-
-      const finalizeUpload = async (formData: FormData) => {
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Upload failed");
-        }
-
-        await fetch(`/api/album/${params.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "in_progress" }),
-        });
-
-        setUploadComplete(true);
-        setUploading(false);
-      };
-
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to upload images. Please try again."
-      );
-      setUploading(false);
-    }
+    // Add files to upload queue and start uploading
+    uploadQueue.addToQueue(organizedImages);
+    uploadQueue.startUploads();
   };
 
   const handleRemoveImage = useCallback((index: number) => {
@@ -512,10 +439,6 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   }, []);
 
 
-  // Check if an image is uploaded
-  const isImageUploaded = (index: number) => {
-    return uploadedImagesStatus.includes(index);
-  };
 
 
   return (
@@ -696,7 +619,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                                   }
                                 }
                               }}
-                              disabled={uploading}
+                              disabled={uploadQueue.isUploading}
                             >
                               <Check size={16} className={`mr-1 ${organizationMethod === "auto" ? "text-white" : "text-blue-600"}`} />
                               Organize with A.I (Recommended)
@@ -722,7 +645,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                                   setOrganizedImages(sortedImages);
                                 }
                               }}
-                              disabled={uploading}
+                              disabled={uploadQueue.isUploading}
                             >
                               <Calendar size={16} className={`mr-1 ${organizationMethod === "date" ? "text-white" : "text-blue-600"}`} />
                               By Date
@@ -757,7 +680,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                                   setOrganizedImages(organizedByLocation);
                                 }
                               }}
-                              disabled={uploading}
+                              disabled={uploadQueue.isUploading}
                             >
                               <MapPin size={16} className={`mr-1 ${organizationMethod === "location" ? "text-white" : "text-blue-600"}`} />
                               By Location
@@ -801,7 +724,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                                   setOrganizedImages(organized);
                                 }
                               }}
-                              disabled={uploading}
+                              disabled={uploadQueue.isUploading}
                             >
                               <Users size={16} className={`mr-1 ${organizationMethod === "event" ? "text-white" : "text-blue-600"}`} />
                               By Event
@@ -861,7 +784,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                           )}
                           <button
                             onClick={handleUploadConfirmed}
-                            disabled={uploading} //--> organizedImages.length < MIN_IMAGES ||
+                            disabled={uploadQueue.isUploading}
                             className="bg-blue-600 h-10 w-36 text-white py-2 px-4 rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                           >
                             Continue
@@ -869,46 +792,16 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                         </div>
                       </div>
 
-                      {uploading && (
-                        <div className="mb-4 bg-blue-50 p-4 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-blue-700 font-medium">
-                              Uploading to Green Cloud...
-                            </span>
-                            <span className="text-sm text-blue-600">
-                              {uploadProgress}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-blue-200 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
-                              style={{
-                                width: `${uploadProgress}%`
-                              }}
-                            ></div>
-                          </div>
-                          <p className="text-xs text-blue-600 mt-2">
-                            {uploadProgress < 100
-                              ? `Uploading your photos securely...`
-                              : `All photos uploaded successfully!`}
-                          </p>
-                        </div>
-                      )}
-
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         {organizedImages.map((file, index) => (
                           <div key={index} className="relative">
-                            {uploading && (
-                              <div className={`absolute top-2 right-2 z-10 rounded-full w-3 h-3 ${isImageUploaded(index) ? 'bg-green-500' : 'bg-gray-300'
-                                }`} />
-                            )}
                             <div className="relative aspect-square">
                               <img
                                 src={file.preview}
                                 alt={`Uploaded ${index + 1}`}
                                 className="w-full h-full object-cover rounded"
                               />
-                              {!uploading && (
+                              {!uploadQueue.isUploading && (
                                 <button
                                   onClick={() => handleRemoveImage(index)}
                                   className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 transition-opacity hover:bg-red-600"
@@ -926,13 +819,25 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 )}
               </div>
             ) : (
-              <>
-                <UploadedImagesGrid images={uploadedImages} params={params} />
-              </>
+              <UploadedImagesGrid images={uploadedImages} params={params} />
             )}
           </div>
         </div>
       </div>
+
+      {/* Upload Progress Overlay */}
+      <UploadProgressOverlay
+        queue={uploadQueue.queue}
+        stats={uploadQueue.stats}
+        isUploading={uploadQueue.isUploading}
+        onPauseAll={uploadQueue.pauseAll}
+        onResumeAll={uploadQueue.resumeAll}
+        onClearCompleted={uploadQueue.clearCompleted}
+        onRetryItem={uploadQueue.retryItem}
+        onPauseItem={uploadQueue.pauseItem}
+        onResumeItem={uploadQueue.resumeItem}
+        onRemoveItem={uploadQueue.removeFromQueue}
+      />
     </div>
   );
 }

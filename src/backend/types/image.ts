@@ -156,7 +156,7 @@ export interface ImageMetadata {
 
 export interface EnhancedFile extends File {
   id?: string;
-  originalFile: File;
+  originalFile?: File;
   filename?: string;
   preview?: string;
   dataUrl?: string;
@@ -164,6 +164,7 @@ export interface EnhancedFile extends File {
   imageUrl?: string;
   height: number;
   width: number;
+  sortOrder?: number;
 }
 
 export interface ApiImage {
@@ -188,7 +189,7 @@ export function apiImageToEnhancedFile(apiImage: ApiImage): EnhancedFile {
     lastModified: Date.now(),
     size: 0,
     type: apiImage.mimeType,
-    text: () => Promise.resolve(''),
+    text: () => Promise.resolve(""),
     stream: () => new ReadableStream(),
     arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
     slice: () => new Blob(),
