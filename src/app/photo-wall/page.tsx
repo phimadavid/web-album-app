@@ -569,121 +569,103 @@ const PhotoWallPage = () => {
                             <div className="text-center mb-12">
                                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Your Generated Image Wall</h2>
                                 <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                                    See how your artwork looks on different materials
+                                    High-resolution artwork ready for printing on premium materials
                                 </p>
                             </div>
 
-                            <div className="space-y-12">
+                            <div className="space-y-16">
                                 {generatedImages.map((image) => (
-                                    <div key={image.id} className="bg-white rounded-2xl p-6 shadow-lg">
-                                        <div className="mb-6">
-                                            <h3 className="text-xl font-semibold text-gray-900 mb-2">"{image.prompt}"</h3>
-                                            <p className="text-gray-600">
-                                                Choose your preferred material and see the 3D preview |
-                                                <span className="font-medium text-blue-600 ml-1">
+                                    <div key={image.id} className="bg-white rounded-2xl p-8 shadow-lg">
+                                        <div className="mb-8">
+                                            <h3 className="text-2xl font-semibold text-gray-900 mb-3">"{image.prompt}"</h3>
+                                            <div className="flex flex-wrap gap-4 text-sm">
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
                                                     {styles.find(s => s.id === selectedStyle)?.name} Style
                                                 </span>
-                                                {' • '}
-                                                <span className="font-medium text-green-600">
-                                                    {productOptions.find(p => p.id === selectedProduct)?.name} - {sizeOptions.find(s => s.id === selectedSize)?.name}
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                                                    {productOptions.find(p => p.id === selectedProduct)?.name}
                                                 </span>
-                                            </p>
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
+                                                    {sizeOptions.find(s => s.id === selectedSize)?.name} - {sizeOptions.find(s => s.id === selectedSize)?.dimensions}
+                                                </span>
+                                            </div>
                                         </div>
 
-                                        {/* 3D Material Previews */}
-                                        <div className="grid md:grid-cols-3 gap-8">
-                                            {/* Canvas Print */}
-                                            <div className="text-center">
-                                                <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center justify-center gap-2">
-                                                    🎨 Canvas Print
-                                                </h4>
-                                                <div className="relative perspective-1000">
-                                                    <div className="canvas-mockup transform-gpu transition-transform duration-500 hover:rotate-y-12">
-                                                        <div className="canvas-frame relative">
-                                                            <img
-                                                                src={image.url}
-                                                                alt={`Canvas: ${image.prompt}`}
-                                                                className="w-full h-full object-cover rounded-sm"
-                                                            />
-                                                            {/* Canvas texture overlay */}
-                                                            <div className="absolute inset-0 bg-canvas-texture opacity-20 rounded-sm"></div>
-                                                            {/* Canvas wrap edges */}
-                                                            <div className="canvas-edge-right absolute top-0 right-0 w-2 h-full bg-gradient-to-r from-transparent to-black opacity-30"></div>
-                                                            <div className="canvas-edge-bottom absolute bottom-0 left-0 w-full h-2 bg-gradient-to-b from-transparent to-black opacity-30"></div>
-                                                        </div>
-                                                    </div>
+                                        {/* Large High-Resolution Image Display */}
+                                        <div className="relative mb-8">
+                                            <div className="aspect-[4/3] w-full max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl bg-gray-100">
+                                                <img
+                                                    src={image.url}
+                                                    alt={`High-resolution artwork: ${image.prompt}`}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                {/* High-quality indicator overlay */}
+                                                <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                                                    High Resolution
                                                 </div>
-                                                <p className="mt-4 text-sm text-gray-600">Premium cotton canvas with gallery wrap</p>
-                                                <p className="text-lg font-semibold text-blue-600 mt-2">from $49.99</p>
-                                                <button onClick={() => setShowRegisterModal(true)} className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-300 shadow-md hover:shadow-lg">
-                                                    Customize & Order Canvas Print
-                                                </button>
                                             </div>
 
-                                            {/* Glass Print */}
-                                            <div className="text-center">
-                                                <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center justify-center gap-2">
-                                                    🔍 Glass Print
-                                                </h4>
-                                                <div className="relative perspective-1000">
-                                                    <div className="glass-mockup transform-gpu transition-transform duration-500 hover:rotate-y-12">
-                                                        <div className="glass-frame relative">
-                                                            <img
-                                                                src={image.url}
-                                                                alt={`Glass: ${image.prompt}`}
-                                                                className="w-full h-full object-cover rounded-sm"
-                                                            />
-                                                            {/* Glass reflection overlay */}
-                                                            <div className="absolute inset-0 bg-gradient-to-br from-white via-transparent to-transparent opacity-30 rounded-sm"></div>
-                                                            <div className="absolute inset-0 bg-gradient-to-tl from-blue-200 via-transparent to-transparent opacity-20 rounded-sm"></div>
-                                                            {/* Glass edge */}
-                                                            <div className="glass-edge absolute inset-0 border-2 border-gray-300 rounded-sm shadow-inner"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <p className="mt-4 text-sm text-gray-600">Modern acrylic glass for vibrant colors</p>
-                                                <p className="text-lg font-semibold text-blue-600 mt-2">from $79.99</p>
-                                                <button
-                                                    onClick={() => setShowRegisterModal(true)}
-                                                    className="mt-4 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors duration-300 shadow-md hover:shadow-lg"
-                                                >
-                                                    Customize & Order Glass Print
-                                                </button>
+                                            {/* Image details */}
+                                            <div className="mt-4 text-center text-gray-600">
+                                                <p className="text-sm">
+                                                    Professional quality • Print-ready resolution • Perfect for wall display
+                                                </p>
                                             </div>
+                                        </div>
 
-                                            {/* Aluminum Print */}
-                                            <div className="text-center">
-                                                <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center justify-center gap-2">
-                                                    ✨ Aluminum Print
-                                                </h4>
-                                                <div className="relative perspective-1000">
-                                                    <div className="aluminum-mockup transform-gpu transition-transform duration-500 hover:rotate-y-12">
-                                                        <div className="aluminum-frame relative">
-                                                            <img
-                                                                src={image.url}
-                                                                alt={`Aluminum: ${image.prompt}`}
-                                                                className="w-full h-full object-cover rounded-sm"
-                                                            />
-                                                            {/* Aluminum metallic overlay */}
-                                                            <div className="absolute inset-0 bg-gradient-to-br from-gray-200 via-transparent to-gray-400 opacity-40 rounded-sm"></div>
-                                                            <div className="absolute inset-0 bg-brushed-metal opacity-30 rounded-sm"></div>
-                                                            {/* Aluminum edge */}
-                                                            <div className="aluminum-edge absolute inset-0 border border-gray-400 rounded-sm shadow-lg"></div>
-                                                        </div>
-                                                    </div>
+                                        {/* Order Options */}
+                                        <div className="grid md:grid-cols-3 gap-4">
+                                            <button
+                                                onClick={() => setShowRegisterModal(true)}
+                                                className="flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+                                            >
+                                                <span className="text-xl">🎨</span>
+                                                <div className="text-left">
+                                                    <div className="font-semibold">Canvas Print</div>
+                                                    <div className="text-sm opacity-90">from ${productOptions.find(p => p.id === 'canvas')?.basePrice}</div>
                                                 </div>
-                                                <p className="mt-4 text-sm text-gray-600">Sleek metal finish for contemporary look</p>
-                                                <p className="text-lg font-semibold text-blue-600 mt-2">from $89.99</p>
-                                                <button onClick={() => setShowRegisterModal(true)} className="mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors duration-300 shadow-md hover:shadow-lg">
-                                                    Customize & Order Aluminum Print
-                                                </button>
+                                            </button>
+
+                                            <button
+                                                onClick={() => setShowRegisterModal(true)}
+                                                className="flex items-center justify-center gap-3 px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+                                            >
+                                                <span className="text-xl">🔍</span>
+                                                <div className="text-left">
+                                                    <div className="font-semibold">Glass Print</div>
+                                                    <div className="text-sm opacity-90">from ${productOptions.find(p => p.id === 'glass')?.basePrice}</div>
+                                                </div>
+                                            </button>
+
+                                            <button
+                                                onClick={() => setShowRegisterModal(true)}
+                                                className="flex items-center justify-center gap-3 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+                                            >
+                                                <span className="text-xl">✨</span>
+                                                <div className="text-left">
+                                                    <div className="font-semibold">Aluminum Print</div>
+                                                    <div className="text-sm opacity-90">from ${productOptions.find(p => p.id === 'aluminum')?.basePrice}</div>
+                                                </div>
+                                            </button>
+                                        </div>
+
+                                        {/* Total price display */}
+                                        <div className="mt-6 bg-blue-50 rounded-lg p-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-lg font-semibold text-gray-900">
+                                                    Current Selection Total:
+                                                </span>
+                                                <span className="text-2xl font-bold text-blue-600">${calculatePrice()}</span>
                                             </div>
+                                            <p className="text-sm text-gray-600 mt-2">
+                                                {productOptions.find(p => p.id === selectedProduct)?.name} • {sizeOptions.find(s => s.id === selectedSize)?.dimensions}
+                                            </p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    </section >
+                    </section>
                 )}
 
                 {/* Features Section */}
