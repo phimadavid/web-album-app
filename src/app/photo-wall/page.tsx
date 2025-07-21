@@ -1,19 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import ImageAlbum from "./../../../public/images/image-album.jpg"
-import Image from 'next/image';
-import { generateTemplateImage } from '@/lib/services/hf.generate.template';
-import RegisterPage from '@/app/register/register-component';
-import axios from 'axios';
 
-// Types
-type PhotoCategory = {
-    id: number;
-    name: string;
-    count: number;
-    image: string;
-};
+import Image from 'next/image';
+import axios from 'axios';
+import RegisterPage from '@/app/register/register-component';
+import ImageAlbum from "./../../../public/images/image-album.jpg"
+import { generateTemplateImage } from '@/lib/services/hf.generate.template';
 
 type Testimonial = {
     id: number;
@@ -47,15 +40,6 @@ type GeneratedImage = {
 };
 
 const PhotoWallPage = () => {
-    // Sample data
-    const categories: PhotoCategory[] = [
-        { id: 1, name: "Nature", count: 243, image: "/api/placeholder/400/300" },
-        { id: 2, name: "Portrait", count: 157, image: "/api/placeholder/400/300" },
-        { id: 3, name: "Architecture", count: 112, image: "/api/placeholder/400/300" },
-        { id: 4, name: "Travel", count: 198, image: "/api/placeholder/400/300" },
-        { id: 5, name: "Abstract", count: 89, image: "/api/placeholder/400/300" },
-        { id: 6, name: "Vintage", count: 134, image: "/api/placeholder/400/300" },
-    ];
 
     const testimonials: Testimonial[] = [
         {
