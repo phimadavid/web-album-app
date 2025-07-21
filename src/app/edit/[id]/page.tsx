@@ -2673,55 +2673,64 @@ const AsideNavigation: React.FC<
                 <span>Add Photos</span>
               </button>
 
-              {isContentPage && (
+              {/* Show all album images */}
+              {albumData?.images && albumData.images.length > 0 && (
                 <div>
                   <h4 className="font-medium text-sm text-gray-700 mb-2">
-                    {getPageNumbers()}
+                    All Album Images ({albumData.images.length})
                   </h4>
-                  <div className="space-y-2">
-                    {currentPageImages.map((image, index) => {
-                      const globalIndex = (currentPage - 2) * 2 + index;
-                      const isSelected = selectedImageIndex === globalIndex;
+                  <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+                    {albumData.images.map((image, index) => {
+                      const isSelected = selectedImageIndex === index;
 
                       return (
                         <div
                           key={`thumb-${index}`}
-                          onClick={() => onImageSelect(image, globalIndex)}
-                          className={`flex items-center p-2 rounded border cursor-pointer transition-all ${isSelected
+                          onClick={() => onImageSelect(image, index)}
+                          className={`flex flex-col p-2 rounded border cursor-pointer transition-all ${isSelected
                             ? 'border-orange-500 bg-orange-50 shadow-md'
                             : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                             }`}
                         >
-                          <div className="h-10 w-10 rounded overflow-hidden mr-2 flex-shrink-0">
+                          <div className="aspect-square rounded overflow-hidden mb-2">
                             <img
                               src={image?.s3Url}
-                              alt={`Thumbnail ${index}`}
+                              alt={`Thumbnail ${index + 1}`}
                               className="h-full w-full object-cover"
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-medium ${isSelected ? 'text-orange-700' : 'text-gray-600'
+                            <p className={`text-xs font-medium text-center ${isSelected ? 'text-orange-700' : 'text-gray-600'
                               }`}>
-                              {index === 0 ? 'Front' : 'Back'}
+                              Image {index + 1}
                             </p>
                             {image?.metadata?.caption && (
-                              <p className="text-xs text-gray-500 truncate mt-1">
+                              <p className="text-xs text-gray-500 truncate mt-1 text-center">
                                 {image.metadata.caption}
                               </p>
                             )}
                             {isSelected && (
-                              <p className="text-xs text-orange-600 mt-1">
-                                Click Editor to edit this image
+                              <p className="text-xs text-orange-600 mt-1 text-center">
+                                Selected
                               </p>
                             )}
                           </div>
                           {isSelected && (
-                            <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
+                            <div className="w-2 h-2 bg-orange-500 rounded-full mx-auto mt-1"></div>
                           )}
                         </div>
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {/* Show message when no images */}
+              {(!albumData?.images || albumData.images.length === 0) && (
+                <div className="text-center py-8">
+                  <ImagePlus size={32} className="mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">No images in your album yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Click "Add Photos" to get started</p>
                 </div>
               )}
 
