@@ -46,7 +46,6 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
     const [aiOverlayImages, setAiOverlayImages] = useState<{ [templateId: string]: string[] }>({});
     const [aiOverlayPrompts, setAiOverlayPrompts] = useState<{ [templateId: string]: string[] }>({});
     const [isGeneratingOverlay, setIsGeneratingOverlay] = useState<{ [templateId: string]: boolean }>({});
-    const [overlayPromptInput, setOverlayPromptInput] = useState<string>('');
 
     // Default prompts for automatic AI overlay generation
     const defaultOverlayPrompts = [
@@ -157,23 +156,6 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
         return templateImage;
     };
 
-    // Function to cycle through overlay images
-    const cycleOverlayImage = (templateId: string, direction: 'next' | 'prev') => {
-        const currentIndex = overlayImageIndex[templateId] || 0;
-        let newIndex;
-
-        if (direction === 'next') {
-            newIndex = (currentIndex + 1) % Images.length;
-        } else {
-            newIndex = currentIndex === 0 ? Images.length - 1 : currentIndex - 1;
-        }
-
-        setOverlayImageIndex(prev => ({
-            ...prev,
-            [templateId]: newIndex
-        }));
-    };
-
     // Function to get overlay settings for a template
     const getOverlaySettings = (templateId: string) => {
         return overlaySettings[templateId] || {
@@ -181,33 +163,6 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
             opacity: 90, // Default opacity percentage
             position: 'center' // Default position
         };
-    };
-
-    // Function to update overlay settings
-    const updateOverlaySettings = (templateId: string, settings: Partial<typeof overlaySettings[string]>) => {
-        setOverlaySettings(prev => ({
-            ...prev,
-            [templateId]: {
-                ...getOverlaySettings(templateId),
-                ...settings
-            }
-        }));
-    };
-
-    // Function to get current overlay image for a template
-    const getCurrentOverlayImage = (templateId: string) => {
-        const currentIndex = overlayImageIndex[templateId] || 0;
-        if (overlayMode === 'ai') {
-            const aiImages = aiOverlayImages[templateId] || [];
-            if (aiImages.length > 0) {
-                return {
-                    previewUrl: aiImages[currentIndex % aiImages.length],
-                    s3Url: aiImages[currentIndex % aiImages.length],
-                    isAI: true
-                };
-            }
-        }
-        return Images[currentIndex];
     };
 
     // Function to generate AI overlay images
@@ -857,12 +812,11 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
                                                             <img
                                                                 src={template.image}
                                                                 alt={`${template.name} background`}
-                                                                className="w-full h-full object-cover bg-white blur-[0.8px] brightness-95 contrast-105 saturate-110"
+                                                                className="w-full h-full object-cover bg-white"
                                                                 onLoad={() => handleImageLoad(template.id)}
                                                                 style={{
                                                                     border: '3px solid #bbb',
                                                                     boxShadow: '3px 3px 12px rgba(0,0,0,0.25)',
-                                                                    filter: 'blur(0.8px) brightness(0.95) contrast(1.05)',
                                                                 }}
                                                             />
                                                         </div>
