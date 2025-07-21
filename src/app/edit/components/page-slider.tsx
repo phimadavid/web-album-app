@@ -541,9 +541,9 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                     </div>
 
                                     {/* Date at bottom of polaroid */}
-                                    <div className="text-center text-xs text-gray-600 font-handwriting">
+                                    {/* <div className="text-center text-xs text-gray-600 font-handwriting">
                                         {image.metadata?.capturedAt ? new Date(image.metadata.capturedAt).toLocaleDateString() : `Photo ${startIndex + index + 1}`}
-                                    </div>
+                                    </div> */}
 
                                     {/* Text Annotation for polaroid */}
                                     {(() => {

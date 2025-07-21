@@ -645,7 +645,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     setActiveEditorPanel('editor');
   };
 
-
   const isContentPage: boolean =
     (currentPage > 0 &&
       currentPage < (albumData?.images?.length || 0) / 1 + 1) ||
