@@ -344,15 +344,23 @@ const PhotoWallPage = () => {
 
                                 {/* Prompt Input */}
                                 <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Describe your vision
+                                    <label className="block text-lg font-semibold text-gray-800 mb-3">
+                                        ✨ Describe your vision for AI-generated art
                                     </label>
-                                    <textarea
-                                        value={prompt}
-                                        onChange={(e) => setPrompt(e.target.value)}
-                                        placeholder="e.g., A serene mountain landscape with sunset colors, peaceful and calming atmosphere..."
-                                        className="w-full h-24 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                    />
+                                    <div className="relative">
+                                        <textarea
+                                            value={prompt}
+                                            onChange={(e) => setPrompt(e.target.value)}
+                                            placeholder="Describe your perfect wall art in detail... For example: 'A serene mountain landscape with sunset colors, peaceful and calming atmosphere, soft warm lighting, beautiful nature scenery perfect for a living room wall'"
+                                            className="w-full h-40 px-6 py-4 text-lg border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-blue-50/30 placeholder-gray-500 shadow-lg transition-all duration-300 hover:shadow-xl hover:border-blue-300"
+                                        />
+                                        <div className="absolute bottom-3 right-3 text-sm text-gray-400">
+                                            {prompt.length} characters
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-blue-600 mt-2 font-medium">
+                                        💡 Tip: Be detailed and specific for the best AI results. Mention style, mood, colors, and setting.
+                                    </p>
                                 </div>
 
                                 {/* Style Selection */}
