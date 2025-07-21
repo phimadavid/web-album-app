@@ -126,6 +126,7 @@ const PhotoWallPage = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showPricing, setShowPricing] = useState(false);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
+    const [showStyleSelector, setShowStyleSelector] = useState(false);
 
     // Function to detect if text contains non-English characters
     const containsNonEnglishChars = (text: string): boolean => {
@@ -340,7 +341,96 @@ const PhotoWallPage = () => {
                         <div className="grid lg:grid-cols-2 gap-8">
                             {/* Generator Controls */}
                             <div className="bg-gray-50 rounded-2xl p-6">
-                                <h3 className="text-xl font-semibold mb-4">Create Your Design</h3>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-semibold">Create Your Design</h3>
+
+                                    {/* Style Selection - Top Right */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowStyleSelector(!showStyleSelector)}
+                                            className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-gray-200 rounded-lg hover:border-gray-300 transition-colors shadow-sm"
+                                            title="Choose Style"
+                                        >
+                                            <span className="text-sm font-medium text-gray-700">Style: {styles.find(s => s.id === selectedStyle)?.name}</span>
+                                            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+
+                                        {/* Style selector dropdown */}
+                                        {showStyleSelector && (
+                                            <div className="absolute top-12 right-0 z-30 bg-white rounded-lg shadow-xl border border-gray-200 p-3 min-w-80">
+                                                <div className="text-xs font-medium text-gray-700 mb-3 px-1">Choose Style:</div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {styles.map((style) => (
+                                                        <button
+                                                            key={style.id}
+                                                            onClick={() => {
+                                                                setSelectedStyle(style.id);
+                                                                setShowStyleSelector(false);
+                                                            }}
+                                                            className={`p-2 rounded-md transition-all hover:scale-105 relative ${selectedStyle === style.id
+                                                                ? 'bg-blue-100 border-2 border-blue-500 shadow-md'
+                                                                : 'bg-gray-50 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                                                                }`}
+                                                        >
+                                                            {/* Style Preview Mockup */}
+                                                            <div className="w-full h-16 rounded mb-1 relative overflow-hidden">
+                                                                {style.id === 'modern' && (
+                                                                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+                                                                        <div className="w-8 h-8 bg-gray-600 rounded-sm"></div>
+                                                                    </div>
+                                                                )}
+                                                                {style.id === 'vintage' && (
+                                                                    <div className="w-full h-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
+                                                                        <div className="w-8 h-8 bg-amber-600 rounded-full border-2 border-amber-800"></div>
+                                                                    </div>
+                                                                )}
+                                                                {style.id === 'abstract' && (
+                                                                    <div className="w-full h-full bg-gradient-to-br from-purple-200 to-pink-200 flex items-center justify-center">
+                                                                        <div className="w-6 h-6 bg-purple-500 rounded-full"></div>
+                                                                        <div className="w-4 h-4 bg-pink-500 rounded-full -ml-2 mt-2"></div>
+                                                                    </div>
+                                                                )}
+                                                                {style.id === 'nature' && (
+                                                                    <div className="w-full h-full bg-gradient-to-br from-green-200 to-green-300 flex items-center justify-center">
+                                                                        <div className="w-6 h-8 bg-green-600 rounded-full"></div>
+                                                                        <div className="w-4 h-6 bg-green-700 rounded-full -ml-1"></div>
+                                                                    </div>
+                                                                )}
+                                                                {style.id === 'minimalist' && (
+                                                                    <div className="w-full h-full bg-white flex items-center justify-center border border-gray-200">
+                                                                        <div className="w-6 h-1 bg-gray-800"></div>
+                                                                    </div>
+                                                                )}
+                                                                {style.id === 'colorful' && (
+                                                                    <div className="w-full h-full bg-gradient-to-br from-red-200 via-yellow-200 to-blue-200 flex items-center justify-center">
+                                                                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                                                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                                                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Style name and description */}
+                                                            <div className="text-left">
+                                                                <div className="font-medium text-sm text-gray-900">{style.name}</div>
+                                                                <div className="text-xs text-gray-500 mt-1">{style.description}</div>
+                                                            </div>
+
+                                                            {/* Selection indicator */}
+                                                            {selectedStyle === style.id && (
+                                                                <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                                                    <span className="text-xs text-white">✓</span>
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
                                 {/* Prompt Input */}
                                 <div className="mb-6">
@@ -361,28 +451,6 @@ const PhotoWallPage = () => {
                                     <p className="text-sm text-blue-600 mt-2 font-medium">
                                         💡 Tip: Be detailed and specific for the best AI results. Mention style, mood, colors, and setting.
                                     </p>
-                                </div>
-
-                                {/* Style Selection */}
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Choose Style
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {styles.map((style) => (
-                                            <button
-                                                key={style.id}
-                                                onClick={() => setSelectedStyle(style.id)}
-                                                className={`p-3 rounded-lg border text-left transition-all ${selectedStyle === style.id
-                                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                            >
-                                                <div className="font-medium">{style.name}</div>
-                                                <div className="text-xs text-gray-500">{style.description}</div>
-                                            </button>
-                                        ))}
-                                    </div>
                                 </div>
 
                                 {/* Generate Button */}
