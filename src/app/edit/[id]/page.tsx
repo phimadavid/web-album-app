@@ -424,47 +424,77 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     return { photoWidth, photoHeight };
   };
 
-  // Function to generate AI captions for current page images
+  // Function to generate AI captions for selected image or all images
   const generateCaptionsForCurrentPage = async () => {
-    if (!albumData?.images || !isContentPage) return;
+    if (!albumData?.images || albumData.images.length === 0) return;
 
     try {
       setIsGeneratingCaptions(true);
 
-      // Get current page images
-      const frontPhotoIndex = (currentPage - 2) * 2;
-      const currentPageImages = [
-        frontPhotoIndex >= 0 && frontPhotoIndex < albumData.images.length ? albumData.images[frontPhotoIndex] : null,
-        frontPhotoIndex + 1 < albumData.images.length ? albumData.images[frontPhotoIndex + 1] : null,
-      ].filter(Boolean);
-
       const newCaptions: GeneratedCaption[] = [];
 
-      // Generate captions for each image
-      for (let i = 0; i < currentPageImages.length; i++) {
-        const image = currentPageImages[i];
-        if (!image) continue;
+      // If a specific image is selected, generate caption only for that image
+      if (selectedImageIndex >= 0 && selectedImageIndex < albumData.images.length) {
+        const image = albumData.images[selectedImageIndex];
 
-        // Mock AI caption generation - replace with actual AI service call
+        // Check if caption already exists for this image
+        const existingCaption = generatedCaptions.find(caption => caption.imageIndex === selectedImageIndex);
+        if (existingCaption) {
+          toast.info(`Caption already exists for Image ${selectedImageIndex + 1}`, {
+            position: 'bottom-right',
+            autoClose: 2000,
+          });
+          return;
+        }
+
+        // Generate caption for selected image
         const mockCaptions = await generateMockCaptions(image);
 
         const captionData: GeneratedCaption = {
-          id: `caption-${Date.now()}-${i}`,
+          id: `caption-${Date.now()}-${selectedImageIndex}`,
           shortCaption: mockCaptions.short,
           longCaption: mockCaptions.long,
-          imageIndex: frontPhotoIndex + i,
+          imageIndex: selectedImageIndex,
           createdAt: new Date(),
         };
 
         newCaptions.push(captionData);
+
+        toast.success(`Generated caption for Image ${selectedImageIndex + 1}!`, {
+          position: 'bottom-right',
+          autoClose: 3000,
+        });
+      } else {
+        // No specific image selected, generate for all uncaptioned images
+        for (let i = 0; i < albumData.images.length; i++) {
+          const image = albumData.images[i];
+          if (!image) continue;
+
+          // Skip if caption already exists for this image
+          const existingCaption = generatedCaptions.find(caption => caption.imageIndex === i);
+          if (existingCaption) continue;
+
+          // Mock AI caption generation - replace with actual AI service call
+          const mockCaptions = await generateMockCaptions(image);
+
+          const captionData: GeneratedCaption = {
+            id: `caption-${Date.now()}-${i}`,
+            shortCaption: mockCaptions.short,
+            longCaption: mockCaptions.long,
+            imageIndex: i,
+            createdAt: new Date(),
+          };
+
+          newCaptions.push(captionData);
+        }
+
+        toast.success(`Generated ${newCaptions.length} new captions for your album!`, {
+          position: 'bottom-right',
+          autoClose: 3000,
+        });
       }
 
       setGeneratedCaptions(prev => [...prev, ...newCaptions]);
-
-      toast.success(`Generated ${newCaptions.length} captions for current page!`, {
-        position: 'bottom-right',
-        autoClose: 3000,
-      });
 
     } catch (error) {
       console.error('Error generating captions:', error);
@@ -2375,13 +2405,6 @@ const AsideNavigation: React.FC<
         bgColor: 'bg-green-50 hover:bg-green-100',
       },
       {
-        id: 'captions',
-        icon: MessageSquare,
-        label: 'Captions',
-        color: 'text-indigo-600',
-        bgColor: 'bg-indigo-50 hover:bg-indigo-100',
-      },
-      {
         id: 'design',
         icon: PaintBucket,
         label: 'Design',
@@ -2484,121 +2507,6 @@ const AsideNavigation: React.FC<
               onImageUpdate={onImageUpdate}
               onClose={() => onImageSelect(null, -1)}
             />
-          );
-        case 'captions':
-          return (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                AI Caption Generator
-              </h3>
-
-              <button
-                onClick={generateCaptionsForCurrentPage}
-                disabled={!isContentPage || isGeneratingCaptions || currentPageImages.length === 0}
-                className={`w-full p-3 flex items-center justify-center rounded-full text-sm transition-colors ${!isContentPage || isGeneratingCaptions || currentPageImages.length === 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  }`}
-              >
-                {isGeneratingCaptions ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    <span>Generating Captions...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={16} className="mr-2" />
-                    <span>Generate Captions</span>
-                  </>
-                )}
-              </button>
-
-              {isContentPage && (
-                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded">
-                  <p className="text-xs text-indigo-700 font-medium">
-                    Current Page: {getPageNumbers()}
-                  </p>
-                  <p className="text-xs text-indigo-600 mt-1">
-                    {currentPageImages.length} image{currentPageImages.length !== 1 ? 's' : ''} on this page
-                  </p>
-                </div>
-              )}
-
-              {currentPageCaptions.length > 0 && (
-                <div className="space-y-3">
-                  <h5 className="text-sm font-medium text-gray-700">Generated Captions:</h5>
-                  {currentPageCaptions.map((caption) => (
-                    <div key={caption.id} className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">
-                          Image {caption.imageIndex + 1}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {caption.createdAt.toLocaleTimeString()}
-                        </span>
-                      </div>
-
-                      <div className="p-3 flex flex-col items-start justify-between">
-                        <div className="flex-1">
-                          <div className="text-xs text-blue-600 font-medium mb-1">Short Caption</div>
-                        </div>
-                        <div className='mt-2'>
-                          <button
-                            onClick={() => saveCaptionToTextAnnotation(caption.shortCaption, caption.imageIndex, `${caption.id}-short`)}
-                            className={`ml-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${copiedCaptionId === `${caption.id}-short`
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                              }`}
-                          >
-                            {copiedCaptionId === `${caption.id}-short` ? (
-                              <>
-                                <Check size={12} className="inline mr-1" />
-                                Saved
-                              </>
-                            ) : (
-                              <div className="text-sm text-blue-800">{caption.shortCaption}</div>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="p-3 flex flex-col items-start justify-between">
-                        <div className="flex-1">
-                          <div className="text-xs text-purple-600 font-medium mb-2">Long Caption</div>
-                        </div>
-                        <button
-                          onClick={() => saveCaptionToTextAnnotation(caption.longCaption, caption.imageIndex, `${caption.id}-long`)}
-                          className={`ml-2 px-3 py-1 rounded-md text-xs font-medium transition-colors flex-shrink-0 ${copiedCaptionId === `${caption.id}-long`
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                            }`}
-                        >
-                          {copiedCaptionId === `${caption.id}-long` ? (
-                            <>
-                              <Check size={12} className="inline mr-1" />
-                              Saved
-                            </>
-                          ) : (
-                            <div className="text-sm text-purple-800 leading-relaxed">{caption.longCaption}</div>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!isContentPage && (
-                <div className="text-center py-4">
-                  <MessageSquare size={32} className="mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">
-                    Navigate to a content page to generate captions
-                  </p>
-                </div>
-              )}
-
-              {/* <OrderLink /> */}
-            </div>
           );
         case 'design':
           return (

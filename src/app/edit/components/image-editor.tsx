@@ -3,7 +3,8 @@
 import 'react-image-crop/dist/ReactCrop.css';
 import React, { useState, useRef, useEffect } from "react";
 import { EnhancedFile, Position } from '@/backend/types/image';
-import { Edit, ZoomIn, ZoomOut, RotateCw, RotateCcw, Check, X, Save } from "lucide-react";
+import { Edit, ZoomIn, ZoomOut, RotateCw, RotateCcw, Check, X, Save, Sparkles } from "lucide-react";
+import { toast } from 'react-toastify';
 
 interface ImageEditorProps {
     selectedImage: any | null;
@@ -44,6 +45,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     const [isTextDragging, setIsTextDragging] = useState<boolean>(false);
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
+    const [isGeneratingCaption, setIsGeneratingCaption] = useState<boolean>(false);
+    const [generatedCaptions, setGeneratedCaptions] = useState<{ short: string; long: string } | null>(null);
 
     const imageContainerRef = useRef<HTMLDivElement>(null);
     const imgRef = useRef<HTMLImageElement>(null);
@@ -332,6 +335,74 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
         return style;
     };
 
+    // Mock function to simulate AI caption generation
+    const generateMockCaptions = async (): Promise<{ short: string; long: string }> => {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+
+        // Mock captions
+        const shortCaptions = [
+            "Beautiful moment",
+            "Precious memory",
+            "Special day",
+            "Happy times",
+            "Life's joy",
+            "Sweet memories"
+        ];
+
+        const longCaptions = [
+            "A beautiful moment captured in time, filled with joy and happiness that will be treasured forever.",
+            "This precious memory showcases the beauty of life's simple pleasures and meaningful connections.",
+            "A special day that reminds us of the importance of celebrating life's wonderful moments together.",
+            "Happy times shared with loved ones, creating memories that warm our hearts for years to come.",
+            "Life's joyful moments like these remind us to appreciate the beauty in everyday experiences.",
+            "Sweet memories that capture the essence of love, laughter, and the bonds that matter most."
+        ];
+
+        const randomShort = shortCaptions[Math.floor(Math.random() * shortCaptions.length)];
+        const randomLong = longCaptions[Math.floor(Math.random() * longCaptions.length)];
+
+        return {
+            short: randomShort,
+            long: randomLong
+        };
+    };
+
+    // Function to generate AI captions for the current image
+    const generateCaption = async () => {
+        if (!selectedImage) return;
+
+        try {
+            setIsGeneratingCaption(true);
+            const captions = await generateMockCaptions();
+            setGeneratedCaptions(captions);
+
+            toast.success('Caption generated successfully!', {
+                position: 'bottom-right',
+                autoClose: 2000,
+            });
+
+        } catch (error) {
+            console.error('Error generating caption:', error);
+            toast.error('Failed to generate caption. Please try again.', {
+                position: 'bottom-right',
+                autoClose: 3000,
+            });
+        } finally {
+            setIsGeneratingCaption(false);
+        }
+    };
+
+    // Function to use generated caption as text content
+    const useCaptionAsText = (captionText: string) => {
+        setTextContent(captionText);
+        setEditMode('text');
+        toast.success('Caption added to text editor!', {
+            position: 'bottom-right',
+            autoClose: 2000,
+        });
+    };
+
     if (!selectedImage) {
         return (
             <div className="p-4 text-center">
@@ -472,6 +543,66 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                     <RotateCcw size={16} className="mr-2" />
                     <span className="text-sm">Rotate Counter-clockwise</span>
                 </button>
+
+                {/* AI Caption Generator */}
+                <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                        <Sparkles size={16} className="mr-2 text-indigo-600" />
+                        AI Caption Generator
+                    </h4>
+
+                    <button
+                        onClick={generateCaption}
+                        disabled={isGeneratingCaption}
+                        className={`w-full p-3 rounded-lg transition-colors flex items-center justify-center mb-3 ${isGeneratingCaption
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            }`}
+                    >
+                        {isGeneratingCaption ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                <span className="text-sm">Generating...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles size={16} className="mr-2" />
+                                <span className="text-sm">Generate Caption</span>
+                            </>
+                        )}
+                    </button>
+
+                    {/* Generated Captions Display */}
+                    {generatedCaptions && (
+                        <div className="space-y-3">
+                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                                <div className="mb-2">
+                                    <div className="text-xs text-blue-600 font-medium mb-1">Short Caption</div>
+                                    <p className="text-sm text-gray-800 mb-2">{generatedCaptions.short}</p>
+                                    <button
+                                        onClick={() => useCaptionAsText(generatedCaptions.short)}
+                                        className="w-full px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
+                                    >
+                                        Use as Text
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                                <div>
+                                    <div className="text-xs text-purple-600 font-medium mb-1">Long Caption</div>
+                                    <p className="text-sm text-gray-800 mb-2 leading-relaxed">{generatedCaptions.long}</p>
+                                    <button
+                                        onClick={() => useCaptionAsText(generatedCaptions.long)}
+                                        className="w-full px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200 transition-colors"
+                                    >
+                                        Use as Text
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Text editing controls */}
