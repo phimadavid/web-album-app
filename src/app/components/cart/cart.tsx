@@ -67,13 +67,75 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
     const fetchCart = async () => {
         try {
             setIsLoading(true);
-            const response = await fetch('/api/cart');
-            if (response.ok) {
-                const data = await response.json();
-                setItems(data.items || []);
-                setTotalAmount(data.totalAmount || 0);
-                setTotalItems(data.totalItems || 0);
-            } else {
+            
+            // Fetch both regular cart and AI art cart
+            const [cartResponse, aiCartResponse] = await Promise.all([
+                fetch('/api/cart'),
+                fetch('/api/me/ai-art-cart')
+            ]);
+
+            let allItems: CartItem[] = [];
+            let totalAmount = 0;
+            let totalItems = 0;
+
+            // Process regular cart items
+            if (cartResponse.ok) {
+                const cartData = await cartResponse.json();
+                allItems = [...allItems, ...(cartData.items || [])];
+                totalAmount += cartData.totalAmount || 0;
+                totalItems += cartData.totalItems || 0;
+            }
+
+            // Process AI art cart items
+            if (aiCartResponse.ok) {
+                const aiCartData = await aiCartResponse.json();
+                // Transform AI art items to match CartItem interface
+                const aiItems = (aiCartData.items || []).map((item: any) => ({
+                    id: item.id,
+                    albumId: item.aiArtId || item.id, // Use aiArtId or fallback to id
+                    quantity: item.quantity,
+                    bookFormat: 'ai-art', // Special format for AI art
+                    coverType: item.productType as 'softcover' | 'hardcover' | 'dutch',
+                    pageCount: 1, // AI art is single item
+                    shippingOption: 'standard',
+                    price: item.price,
+                    shippingPrice: 0, // AI art might not have separate shipping
+                    totalPrice: item.totalPrice,
+                    customizations: {
+                        prompt: item.prompt,
+                        style: item.style,
+                        productType: item.productType,
+                        size: item.size,
+                        dimensions: item.dimensions,
+                        imageUrl: item.imageUrl
+                    },
+                    album: {
+                        id: item.aiArtId || item.id,
+                        name: `AI Art: ${item.prompt?.substring(0, 30)}...` || 'AI Generated Art'
+                    },
+                    format: {
+                        id: 'ai-art',
+                        title: `${item.productType} - ${item.size}`,
+                        dimensions: item.dimensions
+                    },
+                    shippingDetails: {
+                        id: 'standard',
+                        title: 'Standard Shipping',
+                        description: 'Standard delivery',
+                        estimatedDays: 7
+                    }
+                }));
+                
+                allItems = [...allItems, ...aiItems];
+                totalAmount += aiCartData.totalAmount || 0;
+                totalItems += aiCartData.totalItems || 0;
+            }
+
+            setItems(allItems);
+            setTotalAmount(totalAmount);
+            setTotalItems(totalItems);
+
+            if (!cartResponse.ok && !aiCartResponse.ok) {
                 toast.error('Failed to fetch cart');
             }
         } catch (error) {
@@ -91,7 +153,13 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
         }
 
         try {
-            const response = await fetch(`/api/cart/${itemId}`, {
+            // Find the item to determine which cart it belongs to
+            const item = items.find(i => i.id === itemId);
+            const isAiArt = item?.bookFormat === 'ai-art';
+            
+            const endpoint = isAiArt ? `/api/me/ai-art-cart/${itemId}` : `/api/cart/${itemId}`;
+            
+            const response = await fetch(endpoint, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -115,7 +183,13 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
 
     const removeItem = async (itemId: string) => {
         try {
-            const response = await fetch(`/api/cart/${itemId}`, {
+            // Find the item to determine which cart it belongs to
+            const item = items.find(i => i.id === itemId);
+            const isAiArt = item?.bookFormat === 'ai-art';
+            
+            const endpoint = isAiArt ? `/api/me/ai-art-cart/${itemId}` : `/api/cart/${itemId}`;
+            
+            const response = await fetch(endpoint, {
                 method: 'DELETE',
             });
 
@@ -135,11 +209,13 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
 
     const clearCart = async () => {
         try {
-            const response = await fetch('/api/cart', {
-                method: 'DELETE',
-            });
+            // Clear both regular cart and AI art cart
+            const [cartResponse, aiCartResponse] = await Promise.all([
+                fetch('/api/cart', { method: 'DELETE' }),
+                fetch('/api/me/ai-art-cart', { method: 'DELETE' })
+            ]);
 
-            if (response.ok) {
+            if (cartResponse.ok || aiCartResponse.ok) {
                 setItems([]);
                 setTotalAmount(0);
                 setTotalItems(0);
@@ -227,7 +303,10 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
                                                 {item.format?.title} ({item.format?.dimensions})
                                             </p>
                                             <p className="text-sm text-gray-600">
-                                                {getCoverTypeDisplay(item.coverType)} • {item.pageCount} pages
+                                                {item.bookFormat === 'ai-art' 
+                                                    ? `${item.customizations?.productType} • ${item.customizations?.size}`
+                                                    : `${getCoverTypeDisplay(item.coverType)} • ${item.pageCount} pages`
+                                                }
                                             </p>
                                         </div>
                                         <button

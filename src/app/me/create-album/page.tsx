@@ -7,8 +7,7 @@ import { motion } from 'framer-motion';
 import { FallingLines } from 'react-loader-spinner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, Check, Upload, ImageIcon, Book } from 'lucide-react';
-import Book3D from '../../terms/components/book3d';
+import { AlertCircle, Check, ImageIcon, Book } from 'lucide-react';
 import { withAuth } from '@/backend/withAuth';
 
 interface ImageData {
@@ -23,8 +22,6 @@ interface AlbumFormat {
     name: string;
     dimensions: string;
     photosize: string;
-    webSizePx: string;
-    webPhotoSizePx: string;
     coverType: string;
     paperQuality: string;
     description: string;
@@ -36,8 +33,6 @@ const albumFormats: AlbumFormat[] = [
         name: 'Standard Album',
         dimensions: '8x10',
         photosize: '4x6',
-        webSizePx: '1920x1080',
-        webPhotoSizePx: '800x600',
         coverType: 'hardcover',
         paperQuality: 'premium',
         description: 'Perfect for everyday memories'
@@ -47,8 +42,6 @@ const albumFormats: AlbumFormat[] = [
         name: 'Premium Album',
         dimensions: '11x14',
         photosize: '6x8',
-        webSizePx: '2560x1440',
-        webPhotoSizePx: '1200x800',
         coverType: 'hardcover',
         paperQuality: 'professional',
         description: 'High-quality professional album'
@@ -58,8 +51,6 @@ const albumFormats: AlbumFormat[] = [
         name: 'Mini Album',
         dimensions: '6x6',
         photosize: '3x3',
-        webSizePx: '1080x1080',
-        webPhotoSizePx: '600x600',
         coverType: 'softcover',
         paperQuality: 'standard',
         description: 'Compact and portable'
@@ -126,8 +117,6 @@ export default function CreateAlbumPage() {
                 format: selectedFormat.id,
                 dimensions: selectedFormat.dimensions,
                 photosize: selectedFormat.photosize,
-                webSizePx: selectedFormat.webSizePx,
-                webPhotoSizePx: selectedFormat.webPhotoSizePx,
                 coverType: selectedFormat.coverType,
                 paperQuality: selectedFormat.paperQuality,
             };

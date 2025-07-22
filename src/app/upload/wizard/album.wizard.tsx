@@ -4,7 +4,6 @@ import FormatSelector from './components/format.selector';
 import CoverSelector from './components/cover.selector';
 import PaperSelector from './components/paper.selector';
 import PhotoSizeSelector from './components/photo.size.selector';
-import WebSizeSelector from './components/web.size.selector';
 import { AlbumWizardData, AlbumWizardProps } from './types/album.wizard.types';
 
 export const ALBUM_OPTIONS = {

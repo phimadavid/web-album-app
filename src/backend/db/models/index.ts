@@ -6,6 +6,8 @@ import CreateAlbum from './createalbum';
 import Book from './book';
 import Layout from './layout';
 import Cart from './cart';
+import AiGeneratedArt from './aiGeneratedArt';
+import AiArtCart from './aiArtCart';
 import './associations';
 /* -- 
  dre ma export tanan ang mga models para dali ra tawagon....
@@ -22,4 +24,6 @@ export default {
   Book,
   Layout,
   Cart,
+  AiGeneratedArt,
+  AiArtCart,
 };

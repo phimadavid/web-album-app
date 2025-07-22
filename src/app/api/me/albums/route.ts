@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
+    console.log('Creating album with data:', body);
     // Create basic album first
     const albumData = {
       name: body.name,
@@ -34,8 +34,6 @@ export async function POST(request: Request) {
         format: body.format,
         dimensions: body.dimensions,
         photosize: body.photosize,
-        webSizePx: body.webSizePx || '1920x1080',
-        webPhotoSizePx: body.webPhotoSizePx || '800x600',
         coverType: body.coverType || 'hardcover',
         paperQuality: body.paperQuality || 'premium',
       };

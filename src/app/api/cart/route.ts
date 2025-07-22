@@ -6,6 +6,9 @@ import Album from '@/backend/db/models/album';
 import User from '@/backend/db/models/user';
 import { PricingService } from '@/backend/services/pricing.service';
 
+// Import the models to ensure associations are loaded
+import '@/backend/db/models/associations';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,13 +20,20 @@ export async function GET(request: NextRequest) {
 
     const cartItems = await Cart.findAll({
       where: { userId },
+      include: [
+        {
+          model: Album,
+          as: 'album',
+          attributes: ['id', 'name'],
+        },
+      ],
       order: [['createdAt', 'DESC']],
     });
 
     const cartWithDetails = cartItems.map((item: any) => ({
       ...item.toJSON(),
       format: PricingService.getBookFormat(item.bookFormat),
-      shippingOption: PricingService.getShippingOption(item.shippingOption),
+      shippingDetails: PricingService.getShippingOption(item.shippingOption),
     }));
 
     return NextResponse.json({

@@ -59,11 +59,25 @@ const Header: React.FC = () => {
   // Fetch cart count function
   const fetchCartCount = async () => {
     try {
-      const response = await fetch('/api/cart');
-      if (response.ok) {
-        const data = await response.json();
-        setCartItemCount(data.totalItems || 0);
+      // Fetch from both cart APIs
+      const [cartResponse, aiCartResponse] = await Promise.all([
+        fetch('/api/cart'),
+        fetch('/api/me/ai-art-cart')
+      ]);
+
+      let totalItems = 0;
+
+      if (cartResponse.ok) {
+        const cartData = await cartResponse.json();
+        totalItems += cartData.totalItems || 0;
       }
+
+      if (aiCartResponse.ok) {
+        const aiCartData = await aiCartResponse.json();
+        totalItems += aiCartData.totalItems || 0;
+      }
+
+      setCartItemCount(totalItems);
     } catch (error) {
       console.error('Error fetching cart count:', error);
     }

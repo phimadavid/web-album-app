@@ -8,7 +8,6 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Upload, Eye, Save } from 'lucide-react';
 import AutoTemplateGenerator from '../../../design/components/auto.template.generator';
 import { ImageDataProps, TemplateGenerationProps } from '../../../design/types/template';
-import AsideNavigation from '../../components/aside.navigation';
 import { withAuth } from '@/backend/withAuth';
 import AddPhotos from '../../../edit/components/addphotos';
 
@@ -163,11 +162,9 @@ const UserDesignPage: React.FC<TemplateGenerationProps> = ({ params }) => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
-            {/* Sidebar */}
-            <AsideNavigation onLogout={logout} />
 
             {/* Main Content */}
-            <div className="flex-1 ml-64">
+            <div className="flex-1">
                 {/* Header */}
                 <div className="bg-white shadow-sm border-b p-4">
                     <div className="flex items-center justify-between">

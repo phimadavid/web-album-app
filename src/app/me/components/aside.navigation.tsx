@@ -2,7 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Bell, PencilRuler, View, Plus, LogOut, BookOpen } from "lucide-react";
+import { User, Bell, PencilRuler, View, Plus, LogOut, BookOpen, Palette } from "lucide-react";
 
 type AsideNavigationProps = {
   onLogout?: () => void;
@@ -45,6 +45,18 @@ const AsideNavigation: React.FC<AsideNavigationProps> = ({ onLogout }) => {
                 >
                   <Plus className="h-5 w-5" />
                   <span>Create Album</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/me/ai-art-generator"
+                  className={`flex items-center space-x-3 px-3 py-2.5 rounded-md ${pathname.startsWith("/me/ai-art-generator")
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                >
+                  <Palette className="h-5 w-5" />
+                  <span>AI Art Generator</span>
                 </Link>
               </li>
               <li>
