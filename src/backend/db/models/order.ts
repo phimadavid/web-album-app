@@ -4,9 +4,9 @@ import {
   InferCreationAttributes,
   InferAttributes,
   CreationOptional,
-} from 'sequelize';
-import { sequelize } from './db';
-import User from './user';
+} from "sequelize";
+import { sequelize } from "./db";
+import User from "./user";
 
 class Order extends Model<
   InferAttributes<Order>,
@@ -16,11 +16,11 @@ class Order extends Model<
   declare userId: number;
   declare orderNumber: string;
   declare status:
-    | 'pending'
-    | 'processing'
-    | 'shipped'
-    | 'delivered'
-    | 'cancelled';
+    | "pending"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
   declare items: Record<string, any>[];
   declare subtotal: number;
   declare shippingTotal: number;
@@ -29,7 +29,7 @@ class Order extends Model<
   declare customerInfo: Record<string, any>;
   declare shippingAddress: Record<string, any>;
   declare paymentMethod: string;
-  declare paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  declare paymentStatus: "pending" | "paid" | "failed" | "refunded";
   declare notes: string | null;
   declare estimatedDelivery: Date | null;
   declare trackingNumber: string | null;
@@ -47,11 +47,11 @@ Order.init(
       allowNull: false,
     },
     userId: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: User,
-        key: 'id',
+        key: "id",
       },
     },
     orderNumber: {
@@ -61,14 +61,14 @@ Order.init(
     },
     status: {
       type: DataTypes.ENUM(
-        'pending',
-        'processing',
-        'shipped',
-        'delivered',
-        'cancelled'
+        "pending",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled"
       ),
       allowNull: false,
-      defaultValue: 'pending',
+      defaultValue: "pending",
     },
     items: {
       type: DataTypes.JSON,
@@ -106,9 +106,9 @@ Order.init(
       allowNull: false,
     },
     paymentStatus: {
-      type: DataTypes.ENUM('pending', 'paid', 'failed', 'refunded'),
+      type: DataTypes.ENUM("pending", "paid", "failed", "refunded"),
       allowNull: false,
-      defaultValue: 'pending',
+      defaultValue: "pending",
     },
     notes: {
       type: DataTypes.TEXT,
@@ -133,7 +133,7 @@ Order.init(
   },
   {
     sequelize,
-    modelName: 'Order',
+    modelName: "Order",
     timestamps: true,
   }
 );

@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run db && next build",
+    "build": "next build",
     "start": "next start --p ${PORT-3000}",
     "lint": "next lint",
-    "db": "npm run db:create && npm run db:migrate",
+    "db": "npm run db:create && npm run db:migrate && npm run db:seed",
     "db:create": "node_modules/sequelize-cli/lib/sequelize db:create",
-    "db:migrate": "./node_modules/sequelize-cli/lib/sequelize db:migrate"
+    "db:migrate": "node_modules/sequelize-cli/lib/sequelize db:migrate",
+    "db:seed": "node_modules/sequelize-cli/lib/sequelize db:seed:all",
+    "db:seed:admin": "node_modules/sequelize-cli/lib/sequelize db:seed --seed 20250724-create-admin-user.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.844.0",

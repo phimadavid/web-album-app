@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 
 interface CartItem {
     id: string;
@@ -53,6 +54,7 @@ interface CartProps {
 }
 
 const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
+    const router = useRouter();
     const [items, setItems] = useState<CartItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [totalAmount, setTotalAmount] = useState(0);
@@ -67,7 +69,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
     const fetchCart = async () => {
         try {
             setIsLoading(true);
-            
+
             // Fetch both regular cart and AI art cart
             const [cartResponse, aiCartResponse] = await Promise.all([
                 fetch('/api/cart'),
@@ -125,7 +127,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
                         estimatedDays: 7
                     }
                 }));
-                
+
                 allItems = [...allItems, ...aiItems];
                 totalAmount += aiCartData.totalAmount || 0;
                 totalItems += aiCartData.totalItems || 0;
@@ -156,9 +158,9 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
             // Find the item to determine which cart it belongs to
             const item = items.find(i => i.id === itemId);
             const isAiArt = item?.bookFormat === 'ai-art';
-            
+
             const endpoint = isAiArt ? `/api/me/ai-art-cart/${itemId}` : `/api/cart/${itemId}`;
-            
+
             const response = await fetch(endpoint, {
                 method: 'PUT',
                 headers: {
@@ -186,9 +188,9 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
             // Find the item to determine which cart it belongs to
             const item = items.find(i => i.id === itemId);
             const isAiArt = item?.bookFormat === 'ai-art';
-            
+
             const endpoint = isAiArt ? `/api/me/ai-art-cart/${itemId}` : `/api/cart/${itemId}`;
-            
+
             const response = await fetch(endpoint, {
                 method: 'DELETE',
             });
@@ -303,7 +305,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
                                                 {item.format?.title} ({item.format?.dimensions})
                                             </p>
                                             <p className="text-sm text-gray-600">
-                                                {item.bookFormat === 'ai-art' 
+                                                {item.bookFormat === 'ai-art'
                                                     ? `${item.customizations?.productType} • ${item.customizations?.size}`
                                                     : `${getCoverTypeDisplay(item.coverType)} • ${item.pageCount} pages`
                                                 }
@@ -376,7 +378,10 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
                             </span>
                         </div>
                         <Button
-                            onClick={onCheckout}
+                            onClick={() => {
+                                onClose();
+                                router.push('/checkout');
+                            }}
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
                         >
                             <CreditCard className="mr-2 h-4 w-4" />
