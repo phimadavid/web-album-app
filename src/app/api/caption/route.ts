@@ -105,9 +105,6 @@ export async function POST(request: NextRequest) {
 
       finalResult = await pollResponse.json();
       attempts++;
-      console.log(
-        `🔄 Polling attempt ${attempts}, status: ${finalResult.status}`
-      );
     }
 
     // Check final status and return appropriate response

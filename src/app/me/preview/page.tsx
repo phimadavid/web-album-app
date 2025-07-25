@@ -231,14 +231,6 @@ const PreviewPage = () => {
     }
   };
 
-  const handleShareAlbum = () => {
-    console.log('Share album:', albumId);
-  };
-
-  const handleDownloadAlbum = () => {
-    console.log('Download album:', albumId);
-  };
-
   const handleAddPhotos = () => {
     setShowAddPhotosModal(true);
   };
@@ -763,7 +755,6 @@ const PreviewPage = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={handleShareAlbum}
               className="flex items-center space-x-2"
             >
               <Share2 className="h-4 w-4" />
@@ -771,7 +762,6 @@ const PreviewPage = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={handleDownloadAlbum}
               className="flex items-center space-x-2"
             >
               <Download className="h-4 w-4" />

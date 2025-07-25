@@ -21,13 +21,6 @@ export async function POST(request: NextRequest) {
     const requestData = await request.json();
     const { base64Image, prompt, style } = requestData;
 
-    console.log('AI Art upload request:', {
-      base64Length: base64Image ? base64Image.length : 0,
-      prompt: prompt?.substring(0, 50) + '...',
-      style,
-      userId: (session.user as any).id
-    });
-
     // Validate required fields
     if (!base64Image || !prompt || !style) {
       return NextResponse.json(
@@ -59,12 +52,6 @@ export async function POST(request: NextRequest) {
     const imageUrl = `https://${BUCKET_NAME}.s3.${
       process.env.AWS_REGION || "us-east-1"
     }.amazonaws.com/${s3Key}`;
-
-    console.log('AI art uploaded to S3:', {
-      s3Key,
-      imageUrl: imageUrl.substring(0, 50) + '...',
-      bufferSize: imageBuffer.length
-    });
 
     return NextResponse.json({ 
       success: true,

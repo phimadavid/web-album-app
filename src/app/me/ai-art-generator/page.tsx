@@ -161,7 +161,6 @@ const AIArtGeneratorPage = () => {
             if (containsNonEnglishChars(promptToUse)) {
                 const translated = await translateToEnglish(promptToUse);
                 promptToUse = translated.trim() ? translated : promptToUse;
-                console.log(`Translated prompt: "${prompt}" → "${promptToUse}"`);
             }
 
             // Create the custom prompt word by combining prompt and selected style

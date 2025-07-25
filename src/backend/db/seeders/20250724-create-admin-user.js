@@ -33,8 +33,6 @@ module.exports = {
       ]);
 
       console.log("Admin user created successfully!");
-      console.log("Email: admin@albummai.com");
-      console.log("Password: adminAlbum#123");
     } else {
       console.log("Admin user already exists, skipping creation.");
     }

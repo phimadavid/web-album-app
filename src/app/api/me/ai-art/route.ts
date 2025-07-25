@@ -19,17 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const requestData = await request.json();
-    const { imageUrl, s3Key, prompt, style, userId } = requestData;
-
-    console.log('AI Art POST request data:', {
-      imageUrl: imageUrl ? `${imageUrl.substring(0, 50)}...` : 'null',
-      s3Key: s3Key ? `${s3Key.substring(0, 30)}...` : 'null',
-      prompt,
-      style,
-      userId,
-      sessionUserId: (session.user as any).id,
-      sessionUserEmail: session.user.email
-    });
+    const { imageUrl, s3Key, prompt, style } = requestData;
 
     // Validate required fields
     if (!imageUrl || !prompt || !style) {
@@ -50,8 +40,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Final user ID for saving:', finalUserId);
-
     // Save to database with S3 information
     const savedArt = await AiGeneratedArt.create({
       userId: finalUserId,
@@ -63,14 +51,6 @@ export async function POST(request: NextRequest) {
       mimeType: 'image/png',
       isPublic: false,
       isFavorite: false,
-    });
-
-    console.log('AI art saved successfully:', {
-      id: savedArt.id,
-      userId: savedArt.userId,
-      prompt: savedArt.prompt,
-      style: savedArt.style,
-      s3Key: savedArt.s3Key,
     });
 
     return NextResponse.json({ 

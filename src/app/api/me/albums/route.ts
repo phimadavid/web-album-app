@@ -17,7 +17,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    console.log('Creating album with data:', body);
     // Create basic album first
     const albumData = {
       name: body.name,

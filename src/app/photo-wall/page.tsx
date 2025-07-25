@@ -165,7 +165,6 @@ const PhotoWallPage = () => {
             // Create the custom prompt word by combining prompt and selected style
             const customPromptWord = `${prompt}, ${selectedStyle} style, high quality, photo realistic, suitable for wall image`;
 
-            console.log('Generating demo image with prompt:', customPromptWord);
             const response = await generateTemplateImage(customPromptWord);
 
             if (response && response.length > 0) {
@@ -178,7 +177,6 @@ const PhotoWallPage = () => {
                     };
                 });
 
-                console.log('Final processed demo images:', demoImages);
                 setGeneratedImages(prev => [...demoImages, ...prev]);
             } else {
                 console.error('No demo images generated');
@@ -221,7 +219,6 @@ const PhotoWallPage = () => {
                 // If translation is empty or failed somehow, fall back to original text
                 promptToUse = translated.trim() ? translated : promptToUse;
 
-                console.log(`Translated prompt: "${prompt}" → "${promptToUse}"`);
             }
 
             // Create the custom prompt word by combining prompt and selected style
@@ -229,8 +226,6 @@ const PhotoWallPage = () => {
 
             // Use the generateTemplateImage function
             const response = await generateTemplateImage(customPromptWord);
-
-            console.log('Generated images response:', response); // Debug log
 
             if (response && response.length > 0) {
                 const newImages: GeneratedImage[] = response.map((imageUrl: string, index: number) => {
@@ -241,8 +236,6 @@ const PhotoWallPage = () => {
                         isLoading: false
                     };
                 });
-
-                console.log('Final processed images:', newImages); // Debug log
 
                 setGeneratedImages(prev => [...newImages, ...prev]);
             } else {
