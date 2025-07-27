@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { baseConn } from "@/backend/connection";
 import registerSchema from "@/app/validation/register.schema";
 import { ValidationError } from "yup";
+import { signIn } from "next-auth/react";
 
 interface FormData {
     name: string;
@@ -86,7 +87,23 @@ const RegisterPage: React.FC = () => {
             // Validate entire form data against schema
             await registerSchema.validate(payload, { abortEarly: false });
 
-            await baseConn.post("/api/users", payload);
+            const response = await baseConn.post("/api/users", payload);
+
+            if (response.data.success) {
+                // Automatically sign in the user after successful registration
+                const signInResult = await signIn("credentials", {
+                    email: formData.email,
+                    password: formData.password,
+                    redirect: false,
+                });
+
+                if (signInResult?.ok) {
+                    // Close modal and redirect to dashboard
+                    window.location.href = "/me/dashboard";
+                } else {
+                    setError("Registration successful, but automatic sign-in failed. Please sign in manually.");
+                }
+            }
 
         } catch (err) {
             if (err instanceof ValidationError) {

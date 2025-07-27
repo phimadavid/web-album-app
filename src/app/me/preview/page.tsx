@@ -623,7 +623,7 @@ const PreviewPage = () => {
         // Emit cart update event for header to listen
         window.dispatchEvent(new CustomEvent('cartUpdated'));
 
-        // toast.success('Item added to cart!');
+        toast.success('📚 Album Book successfully added to cart! Ready for checkout.');
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Failed to add item to cart');

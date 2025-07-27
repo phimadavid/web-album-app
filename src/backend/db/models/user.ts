@@ -26,7 +26,7 @@ class User extends Model<InferAttributes<User>, UserCreationAttributes> {
 
   declare name: string;
   declare email: string;
-  declare password: string;
+  declare password: string | null;
   declare role: Role;
   declare googleId: string | null;
   declare image: string | null;
@@ -55,7 +55,7 @@ User.init(
       unique: true,
     },
     password: {
-      allowNull: false,
+      allowNull: true, // Allow null for OAuth users
       type: DataTypes.STRING,
     },
     googleId: {

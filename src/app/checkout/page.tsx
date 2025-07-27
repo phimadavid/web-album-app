@@ -19,6 +19,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { withAuth } from '@/backend/withAuth';
 import FullScreenLoader from '@/app/components/fullscreen.loader';
+import PayPalButton from '@/app/components/paypal/paypal-button';
 
 interface CartItem {
     id: string;
@@ -122,6 +123,11 @@ const CheckoutPage: React.FC = () => {
                 const cartData = await cartResponse.json();
                 allItems = [...allItems, ...(cartData.items || [])];
                 subtotalAmount += cartData.items?.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0) || 0;
+            } else if (cartResponse.status === 401) {
+                console.error('Cart API returned 401 - User not authenticated');
+                toast.error('Please sign in to access your cart');
+                window.location.href = '/signin';
+                return;
             }
 
             // Process AI art cart items
@@ -158,6 +164,9 @@ const CheckoutPage: React.FC = () => {
 
                 allItems = [...allItems, ...aiItems];
                 subtotalAmount += aiCartData.items?.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0) || 0;
+            } else if (aiCartResponse.status === 401) {
+                console.error('AI Art Cart API returned 401 - User not authenticated');
+                // Don't redirect here as regular cart might still work
             }
 
             setCartItems(allItems);
@@ -272,6 +281,17 @@ const CheckoutPage: React.FC = () => {
             case 'dutch': return 'Dutch Book';
             default: return coverType;
         }
+    };
+
+    const isShippingAddressComplete = () => {
+        return (
+            shippingAddress.firstName.trim() !== '' &&
+            shippingAddress.lastName.trim() !== '' &&
+            shippingAddress.address.trim() !== '' &&
+            shippingAddress.city.trim() !== '' &&
+            shippingAddress.state.trim() !== '' &&
+            shippingAddress.zipCode.trim() !== ''
+        );
     };
 
     // Show loading while checking authentication or loading cart data
@@ -569,7 +589,7 @@ const CheckoutPage: React.FC = () => {
                             </div>
 
                             {/* Payment Buttons */}
-                            <div className="mt-6 space-y-3">
+                            <div className="mt-6 space-y-4">
                                 <Button
                                     onClick={() => handleSubmit('card')}
                                     disabled={isProcessing}
@@ -581,26 +601,59 @@ const CheckoutPage: React.FC = () => {
                                             Processing...
                                         </div>
                                     ) : (
-                                        'Pay with card'
+                                        'Pay with Card'
                                     )}
                                 </Button>
 
-                                <Button
-                                    onClick={() => handleSubmit('paypal')}
-                                    disabled={isProcessing}
-                                    className="w-full bg-black hover:bg-gray-800 text-white py-4 text-lg font-semibold"
-                                >
-                                    PayPal
-                                </Button>
-
-                                <div className="text-center text-sm text-gray-600">
-                                    <div className="flex items-center justify-center space-x-1">
-                                        <span className="text-blue-600 font-semibold">PayPal</span>
-                                        <span>Pay in 4 interest-free payments of $26.04.</span>
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-gray-300" />
                                     </div>
-                                    <button className="text-blue-600 hover:text-blue-800 underline">
-                                        Learn more
-                                    </button>
+                                    <div className="relative flex justify-center text-sm">
+                                        <span className="px-2 bg-white text-gray-500">or</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <PayPalButton
+                                        amount={total}
+                                        currency="USD"
+                                        items={cartItems.map(item => ({
+                                            name: item.bookFormat === 'ai-art' 
+                                                ? 'AI Generated Art Print' 
+                                                : item.album?.name || 'Photo Album',
+                                            price: item.price,
+                                            quantity: item.quantity,
+                                        }))}
+                                        shippingAddress={shippingAddress}
+                                        onSuccess={(details) => {
+                                            toast.success('PayPal payment successful!');
+                                            // Clear cart and redirect to success page
+                                            if (details.order?.id) {
+                                                window.location.href = `/success/${details.order.id}`;
+                                            } else {
+                                                window.location.href = '/success';
+                                            }
+                                        }}
+                                        onError={(error) => {
+                                            console.error('PayPal payment error:', error);
+                                            toast.error('PayPal payment failed. Please try again.');
+                                        }}
+                                        onCancel={() => {
+                                            toast.info('PayPal payment cancelled');
+                                        }}
+                                        disabled={isProcessing || !isShippingAddressComplete()}
+                                    />
+                                    
+                                    <div className="text-center text-sm text-gray-600">
+                                        <div className="flex items-center justify-center space-x-1">
+                                            <span className="text-blue-600 font-semibold">PayPal</span>
+                                            <span>Pay in 4 interest-free payments available.</span>
+                                        </div>
+                                        <button className="text-blue-600 hover:text-blue-800 underline">
+                                            Learn more
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </Card>

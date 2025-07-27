@@ -102,10 +102,15 @@ export async function POST(request: NextRequest) {
 
       await existingItem.save();
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         message: 'Item updated in cart',
         item: existingItem,
       });
+
+      // Add a custom header to trigger cart update on client side
+      response.headers.set('X-Cart-Updated', 'true');
+
+      return response;
     }
 
     // Calculate total price
@@ -126,13 +131,18 @@ export async function POST(request: NextRequest) {
       totalPrice,
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         message: 'Item added to cart',
         item: cartItem,
       },
       { status: 201 }
     );
+
+    // Add a custom header to trigger cart update on client side
+    response.headers.set('X-Cart-Updated', 'true');
+
+    return response;
   } catch (error) {
     console.error('Error adding to AI art cart:', error);
     return NextResponse.json(

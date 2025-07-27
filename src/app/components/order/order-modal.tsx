@@ -149,7 +149,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
             setIsLoading(true);
             await onAddToCart(orderData);
             onClose();
-            toast.success('Item added to cart!');
+            // Success message is handled by the parent component
         } catch (error) {
             console.error('Error adding to cart:', error);
             toast.error('Failed to add item to cart');

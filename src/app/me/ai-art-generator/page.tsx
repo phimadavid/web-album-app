@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { generateTemplateImage } from '@/lib/services/hf.generate.template';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import { Palette, Sparkles, Save, History, Heart } from 'lucide-react';
 
 type ProductOption = {
@@ -283,7 +284,9 @@ const AIArtGeneratorPage = () => {
             });
 
             if (response.data.message) {
-                alert('Item added to cart! You can proceed to checkout.');
+                // Dispatch cart update event to notify header component
+                window.dispatchEvent(new CustomEvent('cartUpdated'));
+                toast.success('🎨 AI Art Print successfully added to cart! Ready for checkout.');
             }
         } catch (error) {
             console.error('Error adding to cart:', error);

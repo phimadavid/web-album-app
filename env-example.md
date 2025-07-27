@@ -30,3 +30,8 @@ HF_API_KEY=key
 ADMIN_EMAILS=marvin-admin@gmail.com
 
 PEXELS_API_KEY=key
+
+# PayPal Configuration
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=your_sandbox_client_id_here
+PAYPAL_CLIENT_SECRET=your_sandbox_client_secret_here
+PAYPAL_ENVIRONMENT=sandbox
