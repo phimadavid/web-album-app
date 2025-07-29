@@ -1,0 +1,125 @@
+/* Resizable text container for page slider */
+.resizableTextContainer {
+  resize: both;
+  overflow: auto;
+  min-width: 80px;
+  min-height: 30px;
+  max-width: 90%;
+  max-height: 70%;
+  border: 2px dashed rgba(59, 130, 246, 0.3);
+  transition: border-color 0.2s ease;
+  position: relative;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.4;
+}
+
+.resizableTextContainer:hover {
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+/* Custom resize handle styling - make it more visible */
+.resizableTextContainer::-webkit-resizer {
+  background: rgba(59, 130, 246, 0.9);
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 12px;
+  height: 12px;
+}
+
+/* Add a resize indicator */
+.resizableTextContainer::after {
+  content: "↘";
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  font-size: 10px;
+  color: rgba(59, 130, 246, 0.7);
+  pointer-events: none;
+  line-height: 1;
+}
+
+.resizableTextContainer:hover::after {
+  color: rgba(59, 130, 246, 1);
+}
+
+/* Custom scrollbar for text content */
+.textContent {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+  height: 100%;
+  overflow: auto;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.textContent::-webkit-scrollbar {
+  width: 4px;
+}
+
+.textContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.textContent::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.textContent::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Responsive adjustments for different layouts */
+.timelineText {
+  min-width: 60px;
+  min-height: 20px;
+  max-width: 95%;
+  max-height: 80%;
+}
+
+.timelineText::-webkit-resizer {
+  width: 8px;
+  height: 8px;
+}
+
+.timelineText::after {
+  font-size: 8px;
+}
+
+.thumbnailText {
+  min-width: 40px;
+  min-height: 15px;
+  max-width: 95%;
+  max-height: 85%;
+}
+
+.thumbnailText::-webkit-resizer {
+  width: 8px;
+  height: 8px;
+}
+
+.thumbnailText::after {
+  font-size: 8px;
+}
+
+.polaroidText {
+  min-width: 50px;
+  min-height: 20px;
+  max-width: 90%;
+  max-height: 75%;
+}
+
+.polaroidText::-webkit-resizer {
+  width: 10px;
+  height: 10px;
+}
+
+.polaroidText::after {
+  font-size: 9px;
+}

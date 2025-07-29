@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { EnhancedFile, Position } from '@/backend/types/image';
 import { Edit, ZoomIn, ZoomOut, RotateCw, RotateCcw, Check, X, Save, Sparkles } from "lucide-react";
 import { toast } from 'react-toastify';
+import styles from './image-editor.module.css';
 
 interface ImageEditorProps {
     selectedImage: any | null;
@@ -35,6 +36,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
         fontFamily: 'Arial, sans-serif',
         fontWeight: 'normal'
     });
+    const [autoResize, setAutoResize] = useState<boolean>(true);
+    const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: 200, height: 80 });
     const [rotationAngle, setRotationAngle] = useState<number>(0);
     const [zoomLevel, setZoomLevel] = useState<number>(1.0);
     const [zoomPosition, setZoomPosition] = useState<Position>({ x: 50, y: 50 });
@@ -52,6 +55,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     const imgRef = useRef<HTMLImageElement>(null);
     const draggableTextRef = useRef<HTMLDivElement>(null);
     const imageWrapperRef = useRef<HTMLDivElement>(null);
+    const textContentRef = useRef<HTMLDivElement>(null);
 
     // Constants
     const ZOOM_INCREMENT = 0.2;
@@ -393,6 +397,82 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
         }
     };
 
+    // Function to calculate optimal font size based on container size and text content
+    const calculateOptimalFontSize = (text: string, containerWidth: number, containerHeight: number): string => {
+        if (!text || !containerWidth || !containerHeight) return '24px';
+
+        // Create a temporary element to measure text
+        const tempElement = document.createElement('div');
+        tempElement.style.position = 'absolute';
+        tempElement.style.visibility = 'hidden';
+        tempElement.style.whiteSpace = 'pre-wrap';
+        tempElement.style.fontFamily = textStyle.fontFamily;
+        tempElement.style.fontWeight = textStyle.fontWeight;
+        tempElement.style.lineHeight = '1.4';
+        tempElement.style.padding = '16px 24px'; // Account for padding
+        tempElement.textContent = text;
+        document.body.appendChild(tempElement);
+
+        let fontSize = 8;
+        let maxFontSize = 72;
+        let optimalSize = fontSize;
+
+        // Binary search for optimal font size
+        while (fontSize <= maxFontSize) {
+            tempElement.style.fontSize = `${fontSize}px`;
+            tempElement.style.width = `${containerWidth - 24}px`; // Account for padding
+
+            const textHeight = tempElement.scrollHeight;
+            const textWidth = tempElement.scrollWidth;
+
+            if (textHeight <= containerHeight - 24 && textWidth <= containerWidth - 24) {
+                optimalSize = fontSize;
+                fontSize += 2;
+            } else {
+                break;
+            }
+        }
+
+        document.body.removeChild(tempElement);
+        return `${Math.max(8, optimalSize)}px`;
+    };
+
+    // Auto-resize effect when container size or text content changes
+    useEffect(() => {
+        if (autoResize && editMode === 'text' && textContent && draggableTextRef.current) {
+            const container = draggableTextRef.current;
+            const rect = container.getBoundingClientRect();
+            
+            if (rect.width > 0 && rect.height > 0) {
+                const newFontSize = calculateOptimalFontSize(textContent, rect.width, rect.height);
+                setTextStyle(prev => ({ ...prev, fontSize: newFontSize }));
+            }
+        }
+    }, [textContent, containerSize, autoResize, editMode]);
+
+    // ResizeObserver to track container size changes
+    useEffect(() => {
+        if (!draggableTextRef.current || editMode !== 'text') return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const { width, height } = entry.contentRect;
+                setContainerSize({ width, height });
+                
+                if (autoResize && textContent) {
+                    const newFontSize = calculateOptimalFontSize(textContent, width, height);
+                    setTextStyle(prev => ({ ...prev, fontSize: newFontSize }));
+                }
+            }
+        });
+
+        resizeObserver.observe(draggableTextRef.current);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [editMode, autoResize, textContent]);
+
     // Function to use generated caption as text content
     const useCaptionAsText = (captionText: string) => {
         setTextContent(captionText);
@@ -450,8 +530,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                         (selectedImage.metadata?.textAnnotation?.textContent && !editMode)) && (
                             <div
                                 ref={draggableTextRef}
-                                onMouseDown={editMode === 'text' ? handleDragStart : undefined}
-                                className={`absolute ${isTextDragging ? 'ring-2 ring-blue-500' : ''} cursor-${editMode === 'text' ? 'move' : 'default'} p-2 inline-block z-20`}
+                                className={`absolute z-20 ${styles.resizableTextContainer} ${isTextDragging ? styles.dragging : ''}`}
                                 style={{
                                     left: editMode === 'text'
                                         ? `${textPositionPx.x}px`
@@ -460,18 +539,55 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                                         ? `${textPositionPx.y}px`
                                         : `${textPosition.y}%`,
                                     transform: editMode === 'text' ? 'none' : 'translate(-50%, -50%)',
-                                    maxWidth: '80%',
+                                    width: editMode === 'text' ? '200px' : 'auto',
+                                    height: editMode === 'text' ? '80px' : 'auto',
                                     color: textStyle.color,
                                     fontFamily: textStyle.fontFamily,
                                     fontSize: textStyle.fontSize,
                                     fontWeight: textStyle.fontWeight,
                                     textShadow: `-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0px 0px 3px rgba(0,0,0,0.7)`,
-                                    backgroundColor: isTextDragging ? 'rgba(0, 123, 255, 0.6)' : 'transparent',
-                                    padding: '4px 8px',
-                                    borderRadius: '4px',
+                                    backgroundColor: isTextDragging ? 'rgba(0, 123, 255, 0.6)' : 'rgba(0, 0, 0, 0.3)',
+                                    padding: editMode === 'text' ? '20px 12px 8px 12px' : '8px 12px',
+                                    borderRadius: '8px',
+                                    cursor: 'default',
                                 }}
                             >
-                                {editMode === 'text' ? textContent : selectedImage.metadata?.textAnnotation?.textContent}
+                                {/* Drag handle - only visible in edit mode */}
+                                {editMode === 'text' && (
+                                    <div
+                                        onMouseDown={handleDragStart}
+                                        className="absolute top-0 left-0 right-0 h-4 bg-blue-500 bg-opacity-20 hover:bg-opacity-40 cursor-move rounded-t-lg flex items-center justify-center"
+                                        style={{ marginTop: '-2px' }}
+                                        title="Drag to move text"
+                                    >
+                                        <div className="text-xs text-white opacity-70">⋮⋮</div>
+                                    </div>
+                                )}
+                                
+                                <div
+                                    className={`${styles.customScrollbar} ${styles.textOverlay}`}
+                                    style={{
+                                        height: editMode === 'text' ? 'calc(100% - 12px)' : '100%',
+                                        overflow: 'auto',
+                                        outline: 'none',
+                                        cursor: editMode === 'text' ? 'text' : 'default',
+                                    }}
+                                    contentEditable={editMode === 'text'}
+                                    suppressContentEditableWarning={true}
+                                    onInput={(e) => {
+                                        if (editMode === 'text') {
+                                            setTextContent(e.currentTarget.textContent || '');
+                                        }
+                                    }}
+                                    onBlur={(e) => {
+                                        if (editMode === 'text') {
+                                            setTextContent(e.currentTarget.textContent || '');
+                                        }
+                                    }}
+                                    dangerouslySetInnerHTML={{
+                                        __html: editMode === 'text' ? textContent : (selectedImage.metadata?.textAnnotation?.textContent || '')
+                                    }}
+                                />
                             </div>
                         )}
 
@@ -575,7 +691,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                     {/* Generated Captions Display */}
                     {generatedCaptions && (
                         <div className="space-y-3">
-                            <div className="bg-white border border-gray-200 rounded-lg p-3 resize-y overflow-auto min-h-[80px] max-h-[200px]">
+                            <div className={`bg-white border border-gray-200 rounded-lg p-3 ${styles.resizableCaption}`}>
                                 <div className="mb-2">
                                     <div className="text-xs text-blue-600 font-medium mb-1 flex items-center">
                                         Short Caption
@@ -591,7 +707,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                                 </div>
                             </div>
 
-                            <div className="bg-white border border-gray-200 rounded-lg p-3 resize-y overflow-auto min-h-[100px] max-h-[300px]">
+                            <div className={`bg-white border border-gray-200 rounded-lg p-3 ${styles.resizableCaption}`}>
                                 <div>
                                     <div className="text-xs text-purple-600 font-medium mb-1 flex items-center">
                                         Long Caption
@@ -614,29 +730,59 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
             {/* Text editing controls */}
             {editMode === 'text' && (
                 <div className="p-4 border-t bg-gray-50">
-                    <input
-                        type="text"
-                        value={textContent}
-                        onChange={(e) => setTextContent(e.target.value)}
-                        className="w-full mb-3 px-3 py-2 text-sm border rounded-lg"
-                        placeholder="Enter text..."
-                    />
+                    <div className="mb-3">
+                        <label className="block text-xs text-gray-600 mb-1">Caption Text:</label>
+                        <textarea
+                            value={textContent}
+                            onChange={(e) => setTextContent(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border rounded-lg resize-y min-h-[60px] max-h-[120px]"
+                            placeholder="Enter your caption text here..."
+                            rows={3}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                            Characters: {textContent.length} | Words: {textContent.trim().split(/\s+/).filter(word => word.length > 0).length}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-1 flex items-center">
+                            💡 Tip: Drag the blue handle (⋮⋮) to move text, drag the ↘ corner to resize it, click text to edit
+                        </div>
+                    </div>
 
-                    <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className="mb-3">
+                        <label className="flex items-center text-xs text-gray-600">
+                            <input
+                                type="checkbox"
+                                checked={autoResize}
+                                onChange={(e) => setAutoResize(e.target.checked)}
+                                className="mr-2"
+                            />
+                            Auto-resize text to fit container (like Canva)
+                        </label>
+                        <div className="text-xs text-gray-500 mt-1">
+                            {autoResize ? 'Text size will automatically adjust when you resize the container' : 'Manual font size control enabled'}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-3">
                         <div>
-                            <label className="block text-xs text-gray-600 mb-1">Size:</label>
+                            <label className="block text-xs text-gray-600 mb-1">Font Size:</label>
                             <select
                                 value={textStyle.fontSize}
                                 onChange={(e) => setTextStyle({ ...textStyle, fontSize: e.target.value })}
-                                className="w-full text-xs px-2 py-1 rounded border"
+                                className={`w-full text-xs px-2 py-1 rounded border ${autoResize ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                disabled={autoResize}
                             >
+                                <option value="12px">Extra Small</option>
                                 <option value="16px">Small</option>
-                                <option value="24px">Medium</option>
-                                <option value="32px">Large</option>
+                                <option value="20px">Medium</option>
+                                <option value="24px">Large</option>
+                                <option value="28px">Extra Large</option>
                             </select>
+                            {autoResize && (
+                                <div className="text-xs text-gray-400 mt-1">Auto-calculated: {textStyle.fontSize}</div>
+                            )}
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-600 mb-1">Weight:</label>
+                            <label className="block text-xs text-gray-600 mb-1">Font Weight:</label>
                             <select
                                 value={textStyle.fontWeight}
                                 onChange={(e) => setTextStyle({ ...textStyle, fontWeight: e.target.value })}
@@ -646,8 +792,26 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                                 <option value="bold">Bold</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-3">
                         <div>
-                            <label className="block text-xs text-gray-600 mb-1">Color:</label>
+                            <label className="block text-xs text-gray-600 mb-1">Font Family:</label>
+                            <select
+                                value={textStyle.fontFamily}
+                                onChange={(e) => setTextStyle({ ...textStyle, fontFamily: e.target.value })}
+                                className="w-full text-xs px-2 py-1 rounded border"
+                            >
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="Georgia, serif">Georgia</option>
+                                <option value="'Times New Roman', serif">Times New Roman</option>
+                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="Helvetica, sans-serif">Helvetica</option>
+                                <option value="Verdana, sans-serif">Verdana</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-600 mb-1">Text Color:</label>
                             <input
                                 type="color"
                                 value={textStyle.color}

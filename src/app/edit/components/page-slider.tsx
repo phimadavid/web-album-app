@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Layout } from 'lucide-react';
 import { AlbumDataProps } from '../data-types/types';
+import styles from './page-slider.module.css';
 
 interface PageSliderProps {
     albumData: AlbumDataProps | null;
@@ -219,27 +220,39 @@ const PageSlider: React.FC<PageSliderProps> = ({
                         parsedTextAnnotation.position &&
                         parsedTextAnnotation.textContent && (
                             <div
-                                className="absolute pointer-events-none"
+                                className={`absolute z-30 ${styles.resizableTextContainer}`}
                                 style={{
                                     left: `${parsedTextAnnotation?.position.x}%`,
                                     top: `${parsedTextAnnotation?.position.y}%`,
                                     transform: 'translate(-50%, -50%)',
+                                    width: '120px',
+                                    height: '60px',
                                     color: parsedTextAnnotation?.style?.color || '#ffffff',
-                                    fontSize: parsedTextAnnotation?.style?.fontSize || '24px',
                                     fontFamily:
                                         parsedTextAnnotation?.style?.fontFamily ||
                                         'Arial, sans-serif',
+                                    fontSize: parsedTextAnnotation?.style?.fontSize || '16px',
                                     fontWeight: parsedTextAnnotation?.style?.fontWeight || 'normal',
                                     textShadow: '0px 0px 4px #000000, 0px 0px 4px #000000',
                                     backgroundColor: 'rgba(0, 0, 0, 0.3)',
                                     padding: '4px 8px',
                                     borderRadius: '4px',
-                                    whiteSpace: 'nowrap',
-                                    textAlign: 'center',
                                     boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+                                    pointerEvents: 'auto',
                                 }}
+                                title="Drag to move, resize with ↘ handle"
                             >
-                                {parsedTextAnnotation?.textContent}
+                                <div 
+                                    className={styles.textContent}
+                                    contentEditable={true}
+                                    suppressContentEditableWarning={true}
+                                    style={{
+                                        outline: 'none',
+                                    }}
+                                    dangerouslySetInnerHTML={{
+                                        __html: parsedTextAnnotation?.textContent || ''
+                                    }}
+                                />
                             </div>
                         )}
                 </div>
@@ -276,26 +289,37 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                 const parsedTextAnnotation = parseTextAnnotation(leftImage);
                                 return parsedTextAnnotation && parsedTextAnnotation.position && parsedTextAnnotation.textContent ? (
                                     <div
-                                        className="absolute z-30 pointer-events-none"
+                                        className={`absolute z-30 ${styles.resizableTextContainer}`}
                                         style={{
                                             left: `${parsedTextAnnotation.position.x}%`,
                                             top: `${parsedTextAnnotation.position.y}%`,
                                             transform: 'translate(-50%, -50%)',
+                                            width: '140px',
+                                            height: '70px',
                                             color: parsedTextAnnotation.style?.color || '#ffffff',
-                                            fontSize: parsedTextAnnotation.style?.fontSize || '24px',
+                                            fontSize: parsedTextAnnotation.style?.fontSize || '18px',
                                             fontFamily: parsedTextAnnotation.style?.fontFamily || 'Arial, sans-serif',
                                             fontWeight: parsedTextAnnotation.style?.fontWeight || 'normal',
                                             textShadow: '0px 0px 4px #000000, 0px 0px 4px #000000',
                                             backgroundColor: 'rgba(0, 0, 0, 0.3)',
                                             padding: '4px 8px',
                                             borderRadius: '4px',
-                                            whiteSpace: 'nowrap',
-                                            maxWidth: '80%',
-                                            textAlign: 'center',
                                             boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+                                            pointerEvents: 'auto',
                                         }}
+                                        title="Drag to move, resize with ↘ handle"
                                     >
-                                        {parsedTextAnnotation.textContent}
+                                        <div 
+                                            className={styles.textContent}
+                                            contentEditable={true}
+                                            suppressContentEditableWarning={true}
+                                            style={{
+                                                outline: 'none',
+                                            }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: parsedTextAnnotation.textContent || ''
+                                            }}
+                                        />
                                     </div>
                                 ) : null;
                             })()}
@@ -330,26 +354,37 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                 const parsedTextAnnotation = parseTextAnnotation(rightImage);
                                 return parsedTextAnnotation && parsedTextAnnotation.position && parsedTextAnnotation.textContent ? (
                                     <div
-                                        className="absolute z-30 pointer-events-none"
+                                        className={`absolute z-30 ${styles.resizableTextContainer}`}
                                         style={{
                                             left: `${parsedTextAnnotation.position.x}%`,
                                             top: `${parsedTextAnnotation.position.y}%`,
                                             transform: 'translate(-50%, -50%)',
+                                            width: '140px',
+                                            height: '70px',
                                             color: parsedTextAnnotation.style?.color || '#ffffff',
-                                            fontSize: parsedTextAnnotation.style?.fontSize || '24px',
+                                            fontSize: parsedTextAnnotation.style?.fontSize || '18px',
                                             fontFamily: parsedTextAnnotation.style?.fontFamily || 'Arial, sans-serif',
                                             fontWeight: parsedTextAnnotation.style?.fontWeight || 'normal',
                                             textShadow: '0px 0px 4px #000000, 0px 0px 4px #000000',
                                             backgroundColor: 'rgba(0, 0, 0, 0.3)',
                                             padding: '4px 8px',
                                             borderRadius: '4px',
-                                            whiteSpace: 'nowrap',
-                                            maxWidth: '80%',
-                                            textAlign: 'center',
                                             boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+                                            pointerEvents: 'auto',
                                         }}
+                                        title="Drag to move, resize with ↘ handle"
                                     >
-                                        {parsedTextAnnotation.textContent}
+                                        <div 
+                                            className={styles.textContent}
+                                            contentEditable={true}
+                                            suppressContentEditableWarning={true}
+                                            style={{
+                                                outline: 'none',
+                                            }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: parsedTextAnnotation.textContent || ''
+                                            }}
+                                        />
                                     </div>
                                 ) : null;
                             })()}
