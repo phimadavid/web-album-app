@@ -575,10 +575,13 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                     {/* Generated Captions Display */}
                     {generatedCaptions && (
                         <div className="space-y-3">
-                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                            <div className="bg-white border border-gray-200 rounded-lg p-3 resize-y overflow-auto min-h-[80px] max-h-[200px]">
                                 <div className="mb-2">
-                                    <div className="text-xs text-blue-600 font-medium mb-1">Short Caption</div>
-                                    <p className="text-sm text-gray-800 mb-2">{generatedCaptions.short}</p>
+                                    <div className="text-xs text-blue-600 font-medium mb-1 flex items-center">
+                                        Short Caption
+                                        <span className="ml-2 text-gray-400 text-xs">(Resizable)</span>
+                                    </div>
+                                    <p className="text-sm text-gray-800 mb-2 break-words">{generatedCaptions.short}</p>
                                     <button
                                         onClick={() => useCaptionAsText(generatedCaptions.short)}
                                         className="w-full px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
@@ -588,10 +591,13 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                                 </div>
                             </div>
 
-                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                            <div className="bg-white border border-gray-200 rounded-lg p-3 resize-y overflow-auto min-h-[100px] max-h-[300px]">
                                 <div>
-                                    <div className="text-xs text-purple-600 font-medium mb-1">Long Caption</div>
-                                    <p className="text-sm text-gray-800 mb-2 leading-relaxed">{generatedCaptions.long}</p>
+                                    <div className="text-xs text-purple-600 font-medium mb-1 flex items-center">
+                                        Long Caption
+                                        <span className="ml-2 text-gray-400 text-xs">(Resizable)</span>
+                                    </div>
+                                    <p className="text-sm text-gray-800 mb-2 leading-relaxed break-words">{generatedCaptions.long}</p>
                                     <button
                                         onClick={() => useCaptionAsText(generatedCaptions.long)}
                                         className="w-full px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200 transition-colors"
