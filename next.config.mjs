@@ -28,7 +28,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "album-service-images.s3.ap-southeast-2.amazonaws.com",
+        hostname: "imagelabumbucket.s3.ap-southeast-2.amazonaws.com",
         port: "",
         pathname: "/**",
       },
