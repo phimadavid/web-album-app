@@ -2190,18 +2190,6 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
                 button to order your photo album book now.
               </p>
             </div>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-            >
-              <Link
-                href="/signin"
-                className="inline-block bg-sky-600 max-w-52 text-white py-3 px-6 rounded-full shadow-md hover:bg-sky-700 transition-colors duration-300"
-              >
-                Accept Invitation
-              </Link>
-            </motion.div>
           </motion.div>
         ) : (
           <div className="flex flex-col items-center gap-2 mb-5">
