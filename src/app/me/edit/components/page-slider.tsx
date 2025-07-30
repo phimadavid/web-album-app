@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Save, Eye, Layout } from 'lucide-react';
-import { AlbumDataProps, ImageDataProps } from '../data-types/types';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Layout } from 'lucide-react';
+import { AlbumDataProps } from '../data-types/types';
+import styles from './page-slider.module.css';
 
 interface PageSliderProps {
     albumData: AlbumDataProps | null;
@@ -35,9 +36,6 @@ const PageSlider: React.FC<PageSliderProps> = ({
     currentPage,
     onPageChange,
     pageBackgrounds,
-    onSave,
-    isSaving,
-    onPreview,
     pageLayouts,
     onPageLayoutChange,
     selectedImageIndex,
@@ -222,27 +220,39 @@ const PageSlider: React.FC<PageSliderProps> = ({
                         parsedTextAnnotation.position &&
                         parsedTextAnnotation.textContent && (
                             <div
-                                className="absolute pointer-events-none"
+                                className={`absolute z-30 ${styles.resizableTextContainer}`}
                                 style={{
                                     left: `${parsedTextAnnotation?.position.x}%`,
                                     top: `${parsedTextAnnotation?.position.y}%`,
                                     transform: 'translate(-50%, -50%)',
+                                    width: '120px',
+                                    height: '60px',
                                     color: parsedTextAnnotation?.style?.color || '#ffffff',
-                                    fontSize: parsedTextAnnotation?.style?.fontSize || '24px',
                                     fontFamily:
                                         parsedTextAnnotation?.style?.fontFamily ||
                                         'Arial, sans-serif',
+                                    fontSize: parsedTextAnnotation?.style?.fontSize || '16px',
                                     fontWeight: parsedTextAnnotation?.style?.fontWeight || 'normal',
                                     textShadow: '0px 0px 4px #000000, 0px 0px 4px #000000',
                                     backgroundColor: 'rgba(0, 0, 0, 0.3)',
                                     padding: '4px 8px',
                                     borderRadius: '4px',
-                                    whiteSpace: 'nowrap',
-                                    textAlign: 'center',
                                     boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+                                    pointerEvents: 'auto',
                                 }}
+                                title="Drag to move, resize with ↘ handle"
                             >
-                                {parsedTextAnnotation?.textContent}
+                                <div 
+                                    className={styles.textContent}
+                                    contentEditable={true}
+                                    suppressContentEditableWarning={true}
+                                    style={{
+                                        outline: 'none',
+                                    }}
+                                    dangerouslySetInnerHTML={{
+                                        __html: parsedTextAnnotation?.textContent || ''
+                                    }}
+                                />
                             </div>
                         )}
                 </div>
@@ -279,26 +289,37 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                 const parsedTextAnnotation = parseTextAnnotation(leftImage);
                                 return parsedTextAnnotation && parsedTextAnnotation.position && parsedTextAnnotation.textContent ? (
                                     <div
-                                        className="absolute z-30 pointer-events-none"
+                                        className={`absolute z-30 ${styles.resizableTextContainer}`}
                                         style={{
                                             left: `${parsedTextAnnotation.position.x}%`,
                                             top: `${parsedTextAnnotation.position.y}%`,
                                             transform: 'translate(-50%, -50%)',
+                                            width: '140px',
+                                            height: '70px',
                                             color: parsedTextAnnotation.style?.color || '#ffffff',
-                                            fontSize: parsedTextAnnotation.style?.fontSize || '24px',
+                                            fontSize: parsedTextAnnotation.style?.fontSize || '18px',
                                             fontFamily: parsedTextAnnotation.style?.fontFamily || 'Arial, sans-serif',
                                             fontWeight: parsedTextAnnotation.style?.fontWeight || 'normal',
                                             textShadow: '0px 0px 4px #000000, 0px 0px 4px #000000',
                                             backgroundColor: 'rgba(0, 0, 0, 0.3)',
                                             padding: '4px 8px',
                                             borderRadius: '4px',
-                                            whiteSpace: 'nowrap',
-                                            maxWidth: '80%',
-                                            textAlign: 'center',
                                             boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+                                            pointerEvents: 'auto',
                                         }}
+                                        title="Drag to move, resize with ↘ handle"
                                     >
-                                        {parsedTextAnnotation.textContent}
+                                        <div 
+                                            className={styles.textContent}
+                                            contentEditable={true}
+                                            suppressContentEditableWarning={true}
+                                            style={{
+                                                outline: 'none',
+                                            }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: parsedTextAnnotation.textContent || ''
+                                            }}
+                                        />
                                     </div>
                                 ) : null;
                             })()}
@@ -333,26 +354,37 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                 const parsedTextAnnotation = parseTextAnnotation(rightImage);
                                 return parsedTextAnnotation && parsedTextAnnotation.position && parsedTextAnnotation.textContent ? (
                                     <div
-                                        className="absolute z-30 pointer-events-none"
+                                        className={`absolute z-30 ${styles.resizableTextContainer}`}
                                         style={{
                                             left: `${parsedTextAnnotation.position.x}%`,
                                             top: `${parsedTextAnnotation.position.y}%`,
                                             transform: 'translate(-50%, -50%)',
+                                            width: '140px',
+                                            height: '70px',
                                             color: parsedTextAnnotation.style?.color || '#ffffff',
-                                            fontSize: parsedTextAnnotation.style?.fontSize || '24px',
+                                            fontSize: parsedTextAnnotation.style?.fontSize || '18px',
                                             fontFamily: parsedTextAnnotation.style?.fontFamily || 'Arial, sans-serif',
                                             fontWeight: parsedTextAnnotation.style?.fontWeight || 'normal',
                                             textShadow: '0px 0px 4px #000000, 0px 0px 4px #000000',
                                             backgroundColor: 'rgba(0, 0, 0, 0.3)',
                                             padding: '4px 8px',
                                             borderRadius: '4px',
-                                            whiteSpace: 'nowrap',
-                                            maxWidth: '80%',
-                                            textAlign: 'center',
                                             boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+                                            pointerEvents: 'auto',
                                         }}
+                                        title="Drag to move, resize with ↘ handle"
                                     >
-                                        {parsedTextAnnotation.textContent}
+                                        <div 
+                                            className={styles.textContent}
+                                            contentEditable={true}
+                                            suppressContentEditableWarning={true}
+                                            style={{
+                                                outline: 'none',
+                                            }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: parsedTextAnnotation.textContent || ''
+                                            }}
+                                        />
                                     </div>
                                 ) : null;
                             })()}
@@ -544,9 +576,9 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                     </div>
 
                                     {/* Date at bottom of polaroid */}
-                                    <div className="text-center text-xs text-gray-600 font-handwriting">
+                                    {/* <div className="text-center text-xs text-gray-600 font-handwriting">
                                         {image.metadata?.capturedAt ? new Date(image.metadata.capturedAt).toLocaleDateString() : `Photo ${startIndex + index + 1}`}
-                                    </div>
+                                    </div> */}
 
                                     {/* Text Annotation for polaroid */}
                                     {(() => {
@@ -600,7 +632,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                     {images_to_render.map((image, index) => (
                         <div key={`timeline-${startIndex + index}`} className="flex items-center gap-4">
                             {/* Timeline dot */}
-                            <div className="w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-md flex-shrink-0 z-10"></div>
+                            <div className="w-8 h-8 bg-blue-500 border-4 border-white shadow-md flex-shrink-0 z-10"></div>
 
                             {/* Content */}
                             <div className="flex-1 flex gap-4 items-center">
@@ -611,7 +643,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                             <div
                                                 onClick={() => onImageSelect && onImageSelect(image, startIndex + index)}
                                                 style={getContainerStyle(image)}
-                                                className={`border-2 w-full h-full rounded-lg overflow-hidden cursor-pointer transition-all duration-200 ${selectedImageIndex === startIndex + index
+                                                className={`border-2 w-full h-full overflow-hidden cursor-pointer transition-all duration-200 ${selectedImageIndex === startIndex + index
                                                     ? 'border-4 border-orange-500 shadow-lg scale-105'
                                                     : 'border-white hover:border-orange-300 hover:shadow-md'
                                                     }`}
@@ -665,7 +697,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                     </>
                                 ) : (
                                     <div className="flex gap-4 items-center flex-1">
-                                        <div className="w-24 h-24 border-2 border-gray-300 border-dashed flex items-center justify-center text-gray-400 text-xs rounded-lg">
+                                        <div className="w-24 h-24 border-2 border-gray-300 border-dashed flex items-center justify-center text-gray-400 text-xs">
                                             No Image
                                         </div>
                                         <div className="flex-1">
@@ -700,7 +732,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
 
         if (!hasImages) {
             return (
-                <div className="w-full aspect-square max-w-2xl mx-auto flex flex-col justify-center items-center p-6 rounded-lg shadow-lg bg-gray-100">
+                <div className="w-full aspect-square max-w-2xl mx-auto flex flex-col justify-center items-center p-6 shadow-lg bg-gray-100">
                     <div className="text-center">
                         <h3 className="text-lg font-semibold text-gray-800 mb-2">No Images</h3>
                         <p className="text-gray-600">This slide has no images</p>
@@ -711,7 +743,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
 
         return (
             <div
-                className="w-full aspect-square max-w-2xl mx-auto flex flex-col justify-center items-center p-6 rounded-lg shadow-lg relative"
+                className="w-full aspect-square max-w-2xl mx-auto flex flex-col justify-center items-center p-6 shadow-lg relative"
                 style={{
                     background: frontPageBackground
                         ? `url("${frontPageBackground}") no-repeat center/cover`
@@ -961,7 +993,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                         <div
                             onClick={() => onImageSelect && onImageSelect(imageData[startIndex], startIndex)}
                             style={getContainerStyle(imageData[startIndex])}
-                            className={`aspect-square w-full max-w-md rounded-lg overflow-hidden relative cursor-pointer transition-all duration-200 ${selectedImageIndex === startIndex
+                            className={`aspect-square w-full max-w-md overflow-hidden relative cursor-pointer transition-all duration-200 ${selectedImageIndex === startIndex
                                 ? 'border-4 border-orange-500 shadow-lg scale-105'
                                 : 'border-2 border-white hover:border-orange-300 hover:shadow-md'
                                 }`}
@@ -1042,7 +1074,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                     <button
                         onClick={prevSlide}
                         disabled={currentSlide === 0}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-white shadow-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <ChevronLeft size={24} className="text-gray-600" />
                     </button>
@@ -1050,7 +1082,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                     <button
                         onClick={nextSlide}
                         disabled={currentSlide >= totalSlides - 1}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-white shadow-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <ChevronRight size={24} className="text-gray-600" />
                     </button>

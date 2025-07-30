@@ -1,3 +1,5 @@
+"use client"
+
 import { motion } from "framer-motion";
 import { SquareX } from "lucide-react";
 import { useEffect, useState } from "react";

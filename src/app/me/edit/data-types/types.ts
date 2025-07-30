@@ -1,5 +1,5 @@
-import { ZoomPosition } from '@/app/design/types/template';
-import { TextAnnotation } from '@/backend/types/image';
+import { ZoomPosition } from "@/app/design/types/template";
+import { TextAnnotation } from "@/backend/types/image";
 
 export type BookAlbumPageProps = {
   params: {
@@ -150,6 +150,8 @@ export interface AsideNavigationProps {
   selectedImageIndex: number;
   onImageUpdate: (index: number, updatedImage: any) => void;
   onImageSelect: (image: any, index: number) => void;
+  activePanel?: string | null;
+  setActivePanel?: (panel: string | null) => void;
 }
 
 export interface AddPhotosModalProps {

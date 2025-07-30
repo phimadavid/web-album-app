@@ -1,4 +1,3 @@
-//src/app/album-book/[id]/page.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -14,6 +13,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { NoteFeature } from '../components/note.features';
 import PageSlider from '../components/page-slider';
 import ImageEditor from '../components/image-editor';
+
+import bookHand from './../../../../../public/images/book-hand.png';
 
 import { useAlbumData } from '@/backend/services/actions/getAlbums';
 import { generateTemplateImage } from '@/lib/services/hf.generate.template';
@@ -39,8 +40,6 @@ import {
   WandSparkles,
   RefreshCw,
   X,
-  MessageSquare,
-  Sparkles,
   Check,
   BookOpen,
   Eye,
@@ -64,23 +63,16 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
   const [isToLoading, setIsToLoading] = useState(false);
   const [pageBackgrounds, setPageBackgrounds] = useState<string[]>([]);
   const [showAsideNavigation, setShowAsideNavigation] = useState(false);
-
-  // New state for edit and preview modes
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
   const [isSaving, setIsSaving] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-
-  // New state for caption generation
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false);
   const [generatedCaptions, setGeneratedCaptions] = useState<GeneratedCaption[]>([]);
   const [copiedCaptionId, setCopiedCaptionId] = useState<string | null>(null);
-
-  // New state for mixed layouts
   const [pageLayouts, setPageLayouts] = useState<string[]>([]);
-
-  // New state for image editing
   const [selectedImage, setSelectedImage] = useState<any | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1);
+  const [activeEditorPanel, setActiveEditorPanel] = useState<string | null>('editor');
 
   // Function to handle individual page layout changes
   const handlePageLayoutChange = (slideIndex: number, layout: string) => {
@@ -429,47 +421,77 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     return { photoWidth, photoHeight };
   };
 
-  // Function to generate AI captions for current page images
+  // Function to generate AI captions for selected image or all images
   const generateCaptionsForCurrentPage = async () => {
-    if (!albumData?.images || !isContentPage) return;
+    if (!albumData?.images || albumData.images.length === 0) return;
 
     try {
       setIsGeneratingCaptions(true);
 
-      // Get current page images
-      const frontPhotoIndex = (currentPage - 2) * 2;
-      const currentPageImages = [
-        frontPhotoIndex >= 0 && frontPhotoIndex < albumData.images.length ? albumData.images[frontPhotoIndex] : null,
-        frontPhotoIndex + 1 < albumData.images.length ? albumData.images[frontPhotoIndex + 1] : null,
-      ].filter(Boolean);
-
       const newCaptions: GeneratedCaption[] = [];
 
-      // Generate captions for each image
-      for (let i = 0; i < currentPageImages.length; i++) {
-        const image = currentPageImages[i];
-        if (!image) continue;
+      // If a specific image is selected, generate caption only for that image
+      if (selectedImageIndex >= 0 && selectedImageIndex < albumData.images.length) {
+        const image = albumData.images[selectedImageIndex];
 
-        // Mock AI caption generation - replace with actual AI service call
+        // Check if caption already exists for this image
+        const existingCaption = generatedCaptions.find(caption => caption.imageIndex === selectedImageIndex);
+        if (existingCaption) {
+          toast.info(`Caption already exists for Image ${selectedImageIndex + 1}`, {
+            position: 'bottom-right',
+            autoClose: 2000,
+          });
+          return;
+        }
+
+        // Generate caption for selected image
         const mockCaptions = await generateMockCaptions(image);
 
         const captionData: GeneratedCaption = {
-          id: `caption-${Date.now()}-${i}`,
+          id: `caption-${Date.now()}-${selectedImageIndex}`,
           shortCaption: mockCaptions.short,
           longCaption: mockCaptions.long,
-          imageIndex: frontPhotoIndex + i,
+          imageIndex: selectedImageIndex,
           createdAt: new Date(),
         };
 
         newCaptions.push(captionData);
+
+        toast.success(`Generated caption for Image ${selectedImageIndex + 1}!`, {
+          position: 'bottom-right',
+          autoClose: 3000,
+        });
+      } else {
+        // No specific image selected, generate for all uncaptioned images
+        for (let i = 0; i < albumData.images.length; i++) {
+          const image = albumData.images[i];
+          if (!image) continue;
+
+          // Skip if caption already exists for this image
+          const existingCaption = generatedCaptions.find(caption => caption.imageIndex === i);
+          if (existingCaption) continue;
+
+          // Mock AI caption generation - replace with actual AI service call
+          const mockCaptions = await generateMockCaptions(image);
+
+          const captionData: GeneratedCaption = {
+            id: `caption-${Date.now()}-${i}`,
+            shortCaption: mockCaptions.short,
+            longCaption: mockCaptions.long,
+            imageIndex: i,
+            createdAt: new Date(),
+          };
+
+          newCaptions.push(captionData);
+        }
+
+        toast.success(`Generated ${newCaptions.length} new captions for your album!`, {
+          position: 'bottom-right',
+          autoClose: 3000,
+        });
       }
 
       setGeneratedCaptions(prev => [...prev, ...newCaptions]);
-
-      toast.success(`Generated ${newCaptions.length} captions for current page!`, {
-        position: 'bottom-right',
-        autoClose: 3000,
-      });
 
     } catch (error) {
       console.error('Error generating captions:', error);
@@ -642,6 +664,14 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     setSelectedImageIndex(index);
   };
 
+  // Function to handle image selection and auto-open editor
+  const handleImageSelectAndEdit = (image: any, index: number) => {
+    setSelectedImage(image);
+    setSelectedImageIndex(index);
+    // Auto-open editor panel by setting active panel to 'editor'
+    setActiveEditorPanel('editor');
+  };
+
   const isContentPage: boolean =
     (currentPage > 0 &&
       currentPage < (albumData?.images?.length || 0) / 1 + 1) ||
@@ -660,139 +690,285 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
   const { photoWidth, photoHeight } = getImagePixel();
 
   return (
-    <>
-      <div className="flex w-full flex-col">
-        {/* Mobile Header */}
-        <div className="lg:hidden bg-blue-50 p-4 flex items-center justify-between border-b">
-          <div className="flex-1">
-            <p className="font-bold text-center">{AlbumBookName}</p>
+    <div className="flex w-full flex-col">
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-blue-50 p-4 flex items-center justify-between border-b">
+        <div className="flex-1">
+          <p className="font-bold text-center">{AlbumBookName}</p>
+          {isRefreshing && isToLoading && (
+            <div className="flex items-center justify-center text-blue-600 mt-2">
+              <RefreshCw size={16} className="animate-spin mr-1" />
+              <span className="text-sm">Refreshing...</span>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Mode Toggle Buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={switchToEditMode}
+            className={`p-2 rounded-lg shadow-md transition-colors flex items-center gap-1 ${viewMode === 'edit'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white hover:bg-gray-50'
+              }`}
+          >
+            <Edit3 size={16} />
+            <span className="text-sm">Edit</span>
+          </button>
+          {viewMode === 'edit' && (
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`p-2 rounded-lg shadow-md transition-colors flex items-center gap-1 ${isSaving
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+            >
+              {isSaving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm">Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  <span className="text-sm">Save</span>
+                </>
+              )}
+            </button>
+          )}
+          <button
+            onClick={switchToPreviewMode}
+            className={`p-2 rounded-lg shadow-md transition-colors flex items-center gap-1 ${viewMode === 'preview'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white hover:bg-gray-50'
+              }`}
+          >
+            <Eye size={16} />
+            <span className="text-sm">Preview</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row">
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* Desktop Header */}
+          <div className="hidden lg:flex flex-col md:flex-row justify-center">
+            <div className='flex flex-row justify-between w-full px-10 pt-4'>
+              <div>
+                <p className="font-bold">{AlbumBookName}</p>
+                <span className='box italic text-xs'>album name</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={switchToPreviewMode}
+                  className={`px-4 py-2 rounded-lg shadow-md transition-colors flex items-center gap-2 ${viewMode === 'preview'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white hover:bg-gray-50 border border-gray-200'
+                    }`}
+                >
+                  <Eye size={16} />
+                  <span>Preview</span>
+                </button>
+              </div>
+            </div>
+
             {isRefreshing && isToLoading && (
-              <div className="flex items-center justify-center text-blue-600 mt-2">
+              <div className="flex items-center text-blue-600 ml-4">
                 <RefreshCw size={16} className="animate-spin mr-1" />
                 <span className="text-sm">Refreshing...</span>
               </div>
             )}
           </div>
 
-          {/* Mobile Mode Toggle Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={switchToEditMode}
-              className={`p-2 rounded-lg shadow-md transition-colors flex items-center gap-1 ${viewMode === 'edit'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white hover:bg-gray-50'
-                }`}
-            >
-              <Edit3 size={16} />
-              <span className="text-sm">Edit</span>
-            </button>
-            {viewMode === 'edit' && (
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className={`p-2 rounded-lg shadow-md transition-colors flex items-center gap-1 ${isSaving
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-sm">Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save size={16} />
-                    <span className="text-sm">Save</span>
-                  </>
-                )}
-              </button>
+          <motion.div>
+            {isLayoutChanging || isRefreshing || isToLoading ? (
+              <Loading />
+            ) : viewMode === 'edit' ? (
+              <PageSlider
+                albumData={albumData}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+                pageBackgrounds={pageBackgrounds}
+                onSave={handleSave}
+                isSaving={isSaving}
+                onPreview={switchToPreviewMode}
+                pageLayouts={pageLayouts}
+                onPageLayoutChange={handlePageLayoutChange}
+                selectedImageIndex={selectedImageIndex}
+                onImageSelect={handleImageSelectAndEdit}
+              />
+            ) : (
+              <FlippingBook
+                coverColor="#8B4513"
+                albumData={albumData}
+                photoWidth={photoWidth}
+                photoHeight={photoHeight}
+                width={width}
+                height={height}
+                coverImage={albumData?.bookDesign}
+                lastPhoto={lastPhoto}
+                lastPhotoUrl={lastPhotoUrl}
+                numberOfImages={numberOfImage}
+                onPageChange={handlePageChange}
+                key={albumData?.layoutPage || 'default'}
+                isLayoutChanging={isLayoutChanging}
+                pageBackgrounds={pageBackgrounds}
+                pageLayouts={pageLayouts}
+              />
             )}
-            <button
-              onClick={switchToPreviewMode}
-              className={`p-2 rounded-lg shadow-md transition-colors flex items-center gap-1 ${viewMode === 'preview'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white hover:bg-gray-50'
-                }`}
-            >
-              <Eye size={16} />
-              <span className="text-sm">Preview</span>
-            </button>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="flex flex-col lg:flex-row">
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Desktop Header */}
-            <div className="hidden lg:flex flex-col md:flex-row justify-center">
-              <div className='flex flex-row justify-between w-full px-10 pt-4'>
-                <div>
-                  <p className="font-bold">{AlbumBookName}</p>
-                  <span className='box italic text-xs'>album name</span>
-                </div>
-                <div className="flex gap-2">
-                  {viewMode === 'edit' && (
-                    <button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className={`px-4 py-2 rounded-lg shadow-md transition-colors flex items-center gap-2 ${isSaving
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                        }`}
-                    >
-                      {isSaving ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save size={16} />
-                          <span>Save</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                  <button
-                    onClick={switchToPreviewMode}
-                    className={`px-4 py-2 rounded-lg shadow-md transition-colors flex items-center gap-2 ${viewMode === 'preview'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white hover:bg-gray-50 border border-gray-200'
-                      }`}
-                  >
-                    <Eye size={16} />
-                    <span>Preview</span>
-                  </button>
-                </div>
+        {/* Aside Navigation - Only show in edit mode */}
+        <div className={`${viewMode === 'edit' && showAsideNavigation ? 'block' : 'hidden'} max-w-96 ${viewMode === 'edit' ? 'lg:block' : 'lg:hidden'}`}>
+          <AsideNavigation
+            params={paramsId}
+            albumData={albumData as AlbumDataProps}
+            currentPage={currentPage}
+            onAddPhotos={handleAddPhotos}
+            onChangeLayout={handleChangeLayout}
+            onChangeDesign={handleChangeDesign}
+            onAddCaption={handleAddCaption}
+            generateSingleBackground={generateSingleBackground}
+            isGeneratingBackground={isGenerating}
+            generateAllPagesBackground={generateAllPagesBackground}
+            onClose={() => setShowAsideNavigation(false)}
+            isContentPage={isContentPage}
+            generateCaptionsForCurrentPage={generateCaptionsForCurrentPage}
+            isGeneratingCaptions={isGeneratingCaptions}
+            generatedCaptions={generatedCaptions}
+            saveCaptionToTextAnnotation={saveCaptionToTextAnnotation}
+            copiedCaptionId={copiedCaptionId}
+            selectedImage={selectedImage}
+            selectedImageIndex={selectedImageIndex}
+            onImageUpdate={handleImageUpdate}
+            onImageSelect={handleImageSelectAndEdit}
+            activePanel={activeEditorPanel}
+            setActivePanel={setActiveEditorPanel}
+          />
+        </div>
+      </div>
+
+      {/* Mobile Overlay */}
+      {showAsideNavigation && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setShowAsideNavigation(false)}
+        />
+      )}
+
+      <AnimatePresence>
+        {showAddPhotosModal && (
+          <AddPhotosModal
+            params={params}
+            isOpen={showAddPhotosModal}
+            onClose={() => setShowAddPhotosModal(false)}
+            onPhotosSaved={handlePhotosSaved}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCaptionModal && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 flex items-center justify-center z-30 p-4"
+          >
+            <div
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setShowCaptionModal(false)}
+            ></div>
+            <motion.div
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-md sm:max-w-lg lg:max-w-xl p-6 z-70 max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Under Testing and Development
+                </h3>
+                <button
+                  onClick={() => setShowCaptionModal(false)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                  aria-label="Close"
+                >
+                  <SquareX size={25} className="mr-2 text-red-600" />
+                </button>
               </div>
 
-              {isRefreshing && isToLoading && (
-                <div className="flex items-center text-blue-600 ml-4">
-                  <RefreshCw size={16} className="animate-spin mr-1" />
-                  <span className="text-sm">Refreshing...</span>
-                </div>
-              )}
-            </div>
+              <NoteFeature description="This feature is currently in development and testing phase." />
 
-            <motion.div>
-              {isLayoutChanging || isRefreshing || isToLoading ? (
-                <Loading />
-              ) : viewMode === 'edit' ? (
-                <PageSlider
-                  albumData={albumData}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
-                  pageBackgrounds={pageBackgrounds}
-                  onSave={handleSave}
-                  isSaving={isSaving}
-                  onPreview={switchToPreviewMode}
-                  pageLayouts={pageLayouts}
-                  onPageLayoutChange={handlePageLayoutChange}
-                  selectedImageIndex={selectedImageIndex}
-                  onImageSelect={handleImageSelect}
-                />
-              ) : (
+              <div className="text-gray-600 mb-6">
+                <p>
+                  Our development team is working on implementing the photo
+                  upload functionality. This feature will allow you to add
+                  caption in the images to your album.
+                </p>
+                <p className="mt-2">Expected completion: Soon</p>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowCaptionModal(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Got it
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {showPreviewModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          >
+            <div
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={closePreviewModal}
+            ></div>
+            <motion.div
+              className="relative bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden z-60"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <BookOpen size={24} className="text-blue-600" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Book Preview
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {AlbumBookName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closePreviewModal}
+                  className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                  aria-label="Close Preview"
+                >
+                  <X size={24} className="text-gray-600" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(95vh-80px)]">
                 <FlippingBook
                   coverColor="#8B4513"
                   albumData={albumData}
@@ -805,199 +981,31 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                   lastPhotoUrl={lastPhotoUrl}
                   numberOfImages={numberOfImage}
                   onPageChange={handlePageChange}
-                  key={albumData?.layoutPage || 'default'}
+                  key={`preview-${albumData?.layoutPage || 'default'}`}
                   isLayoutChanging={isLayoutChanging}
                   pageBackgrounds={pageBackgrounds}
                   pageLayouts={pageLayouts}
                 />
-              )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
+                <div className="text-sm text-gray-600">
+                  Use the navigation arrows to flip through your book
+                </div>
+                <button
+                  onClick={closePreviewModal}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <Eye size={16} />
+                  Close Preview
+                </button>
+              </div>
             </motion.div>
-          </div>
-
-          {/* Aside Navigation - Only show in edit mode */}
-          <div className={`${viewMode === 'edit' && showAsideNavigation ? 'block' : 'hidden'} max-w-96 ${viewMode === 'edit' ? 'lg:block' : 'lg:hidden'}`}>
-            <AsideToolsNavigation
-              params={paramsId}
-              albumData={albumData as AlbumDataProps}
-              currentPage={currentPage}
-              onAddPhotos={handleAddPhotos}
-              onChangeLayout={handleChangeLayout}
-              onChangeDesign={handleChangeDesign}
-              onAddCaption={handleAddCaption}
-              generateSingleBackground={generateSingleBackground}
-              isGeneratingBackground={isGenerating}
-              generateAllPagesBackground={generateAllPagesBackground}
-              onClose={() => setShowAsideNavigation(false)}
-              isContentPage={isContentPage}
-              generateCaptionsForCurrentPage={generateCaptionsForCurrentPage}
-              isGeneratingCaptions={isGeneratingCaptions}
-              generatedCaptions={generatedCaptions}
-              saveCaptionToTextAnnotation={saveCaptionToTextAnnotation}
-              copiedCaptionId={copiedCaptionId}
-              selectedImage={selectedImage}
-              selectedImageIndex={selectedImageIndex}
-              onImageUpdate={handleImageUpdate}
-              onImageSelect={handleImageSelect}
-            />
-          </div>
-        </div>
-
-        {/* Mobile Overlay */}
-        {showAsideNavigation && (
-          <div
-            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={() => setShowAsideNavigation(false)}
-          />
+          </motion.div>
         )}
-
-        <AnimatePresence>
-          {showAddPhotosModal && (
-            <AddPhotosModal
-              params={params}
-              isOpen={showAddPhotosModal}
-              onClose={() => setShowAddPhotosModal(false)}
-              onPhotosSaved={handlePhotosSaved}
-            />
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {showCaptionModal && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="fixed inset-0 flex items-center justify-center z-30 p-4"
-            >
-              <div
-                className="absolute inset-0 bg-black bg-opacity-50"
-                onClick={() => setShowCaptionModal(false)}
-              ></div>
-              <motion.div
-                className="relative bg-white rounded-lg shadow-xl w-full max-w-md sm:max-w-lg lg:max-w-xl p-6 z-70 max-h-[90vh] overflow-y-auto"
-                initial={{ scale: 0.95 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.95 }}
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Under Testing and Development
-                  </h3>
-                  <button
-                    onClick={() => setShowCaptionModal(false)}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
-                    aria-label="Close"
-                  >
-                    <SquareX size={25} className="mr-2 text-red-600" />
-                  </button>
-                </div>
-
-                <NoteFeature description="This feature is currently in development and testing phase." />
-
-                <div className="text-gray-600 mb-6">
-                  <p>
-                    Our development team is working on implementing the photo
-                    upload functionality. This feature will allow you to add
-                    caption in the images to your album.
-                  </p>
-                  <p className="mt-2">Expected completion: Soon</p>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => setShowCaptionModal(false)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Got it
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Preview Modal */}
-        <AnimatePresence>
-          {showPreviewModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-            >
-              <div
-                className="absolute inset-0 bg-black bg-opacity-50"
-                onClick={closePreviewModal}
-              ></div>
-              <motion.div
-                className="relative bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden z-60"
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              >
-                {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <BookOpen size={24} className="text-blue-600" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        Book Preview
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {AlbumBookName}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={closePreviewModal}
-                    className="p-2 rounded-full hover:bg-gray-200 transition-colors"
-                    aria-label="Close Preview"
-                  >
-                    <X size={24} className="text-gray-600" />
-                  </button>
-                </div>
-
-                {/* Modal Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(95vh-80px)]">
-                  <FlippingBook
-                    coverColor="#8B4513"
-                    albumData={albumData}
-                    photoWidth={photoWidth}
-                    photoHeight={photoHeight}
-                    width={width}
-                    height={height}
-                    coverImage={albumData?.bookDesign}
-                    lastPhoto={lastPhoto}
-                    lastPhotoUrl={lastPhotoUrl}
-                    numberOfImages={numberOfImage}
-                    onPageChange={handlePageChange}
-                    key={`preview-${albumData?.layoutPage || 'default'}`}
-                    isLayoutChanging={isLayoutChanging}
-                    pageBackgrounds={pageBackgrounds}
-                    pageLayouts={pageLayouts}
-                  />
-                </div>
-
-                {/* Modal Footer */}
-                <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
-                  <div className="text-sm text-gray-600">
-                    Use the navigation arrows to flip through your book
-                  </div>
-                  <button
-                    onClick={closePreviewModal}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                  >
-                    <Eye size={16} />
-                    Close Preview
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </>
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -1164,12 +1172,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       x: isAtBeginning ? '0%' : '100%',
       transition: {
         duration: 0.5,
+        ease: 'easeInOut' as const,
       },
     }),
     open: {
       x: '50%',
       transition: {
         duration: 0.5,
+        ease: 'easeInOut' as const,
       },
     },
   };
@@ -1179,12 +1189,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       x: 0,
       transition: {
         duration: 0.5,
+        ease: 'easeInOut' as const,
       },
     },
     visible: (isLeft: boolean) => ({
       x: isLeft ? -180 : 180,
       transition: {
         duration: 0.5,
+        ease: 'easeInOut' as const,
       },
     }),
   };
@@ -1194,12 +1206,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
       rotateY: 0,
       transition: {
         duration: 0.7,
+        ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number], // Custom easing for paper flip feel
       },
     },
     flipped: {
       rotateY: -180,
       transition: {
         duration: 0.7,
+        ease: [0.4, 0.0, 0.2, 1] as [number, number, number, number],
       },
     },
   };
@@ -2192,10 +2206,10 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
         ) : (
           <div className="flex flex-col items-center gap-2 mb-5">
             <div>
-              {/* <img
+              <img
                 src={bookHand.src}
                 className="w-[100px] h-[100px] object-contain"
-              /> */}
+              />
             </div>
             <div className="flex flex-col max-w-[600px] justify-center text-center items-center gap-2">
               <h3 className="box font-bold text-lg">
@@ -2217,7 +2231,7 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
   );
 };
 
-const AsideToolsNavigation: React.FC<
+const AsideNavigation: React.FC<
   AsideNavigationProps
 > = ({
   params,
@@ -2241,8 +2255,12 @@ const AsideToolsNavigation: React.FC<
   selectedImageIndex,
   onImageUpdate,
   onImageSelect,
+  activePanel,
+  setActivePanel,
 }) => {
-    const [activePanel, setActivePanel] = useState<string | null>('photos');
+    // Use external activePanel state or fallback to default
+    const currentActivePanel = activePanel || 'photos';
+    const handleSetActivePanel = setActivePanel || (() => { });
     const [isEditingName, setIsEditingName] = useState<boolean>(false);
     const [localAlbumName, setLocalAlbumName] = useState<string>(
       albumData?.bookName || 'My Photo Album'
@@ -2362,13 +2380,6 @@ const AsideToolsNavigation: React.FC<
         bgColor: 'bg-green-50 hover:bg-green-100',
       },
       {
-        id: 'captions',
-        icon: MessageSquare,
-        label: 'Captions',
-        color: 'text-indigo-600',
-        bgColor: 'bg-indigo-50 hover:bg-indigo-100',
-      },
-      {
         id: 'design',
         icon: PaintBucket,
         label: 'Design',
@@ -2397,7 +2408,7 @@ const AsideToolsNavigation: React.FC<
     };
 
     const togglePanel = (panelId: string): void => {
-      setActivePanel(activePanel === panelId ? null : panelId);
+      handleSetActivePanel(currentActivePanel === panelId ? null : panelId);
     };
 
     const getCurrentPageImages = () => {
@@ -2455,7 +2466,6 @@ const AsideToolsNavigation: React.FC<
     };
 
     const currentPageImages = getCurrentPageImages();
-    const isMultipleLayout: boolean = albumData?.layoutPage === 'multiple';
 
     const currentPageCaptions = generatedCaptions.filter(caption => {
       const frontPhotoIndex = (currentPage - 2) * 2;
@@ -2472,121 +2482,6 @@ const AsideToolsNavigation: React.FC<
               onImageUpdate={onImageUpdate}
               onClose={() => onImageSelect(null, -1)}
             />
-          );
-        case 'captions':
-          return (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                AI Caption Generator
-              </h3>
-
-              <button
-                onClick={generateCaptionsForCurrentPage}
-                disabled={!isContentPage || isGeneratingCaptions || currentPageImages.length === 0}
-                className={`w-full p-3 flex items-center justify-center rounded-full text-sm transition-colors ${!isContentPage || isGeneratingCaptions || currentPageImages.length === 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  }`}
-              >
-                {isGeneratingCaptions ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    <span>Generating Captions...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={16} className="mr-2" />
-                    <span>Generate Captions</span>
-                  </>
-                )}
-              </button>
-
-              {isContentPage && (
-                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded">
-                  <p className="text-xs text-indigo-700 font-medium">
-                    Current Page: {getPageNumbers()}
-                  </p>
-                  <p className="text-xs text-indigo-600 mt-1">
-                    {currentPageImages.length} image{currentPageImages.length !== 1 ? 's' : ''} on this page
-                  </p>
-                </div>
-              )}
-
-              {currentPageCaptions.length > 0 && (
-                <div className="space-y-3">
-                  <h5 className="text-sm font-medium text-gray-700">Generated Captions:</h5>
-                  {currentPageCaptions.map((caption) => (
-                    <div key={caption.id} className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">
-                          Image {caption.imageIndex + 1}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {caption.createdAt.toLocaleTimeString()}
-                        </span>
-                      </div>
-
-                      <div className="p-3 flex flex-col items-start justify-between">
-                        <div className="flex-1">
-                          <div className="text-xs text-blue-600 font-medium mb-1">Short Caption</div>
-                        </div>
-                        <div className='mt-2'>
-                          <button
-                            onClick={() => saveCaptionToTextAnnotation(caption.shortCaption, caption.imageIndex, `${caption.id}-short`)}
-                            className={`ml-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${copiedCaptionId === `${caption.id}-short`
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                              }`}
-                          >
-                            {copiedCaptionId === `${caption.id}-short` ? (
-                              <>
-                                <Check size={12} className="inline mr-1" />
-                                Saved
-                              </>
-                            ) : (
-                              <div className="text-sm text-blue-800">{caption.shortCaption}</div>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="p-3 flex flex-col items-start justify-between">
-                        <div className="flex-1">
-                          <div className="text-xs text-purple-600 font-medium mb-2">Long Caption</div>
-                        </div>
-                        <button
-                          onClick={() => saveCaptionToTextAnnotation(caption.longCaption, caption.imageIndex, `${caption.id}-long`)}
-                          className={`ml-2 px-3 py-1 rounded-md text-xs font-medium transition-colors flex-shrink-0 ${copiedCaptionId === `${caption.id}-long`
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                            }`}
-                        >
-                          {copiedCaptionId === `${caption.id}-long` ? (
-                            <>
-                              <Check size={12} className="inline mr-1" />
-                              Saved
-                            </>
-                          ) : (
-                            <div className="text-sm text-purple-800 leading-relaxed">{caption.longCaption}</div>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!isContentPage && (
-                <div className="text-center py-4">
-                  <MessageSquare size={32} className="mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">
-                    Navigate to a content page to generate captions
-                  </p>
-                </div>
-              )}
-
-              {/* <OrderLink /> */}
-            </div>
           );
         case 'design':
           return (
@@ -2753,55 +2648,64 @@ const AsideToolsNavigation: React.FC<
                 <span>Add Photos</span>
               </button>
 
-              {isContentPage && (
+              {/* Show all album images */}
+              {albumData?.images && albumData.images.length > 0 && (
                 <div>
                   <h4 className="font-medium text-sm text-gray-700 mb-2">
-                    {getPageNumbers()}
+                    All Album Images ({albumData.images.length})
                   </h4>
-                  <div className="space-y-2">
-                    {currentPageImages.map((image, index) => {
-                      const globalIndex = (currentPage - 2) * 2 + index;
-                      const isSelected = selectedImageIndex === globalIndex;
+                  <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+                    {albumData.images.map((image, index) => {
+                      const isSelected = selectedImageIndex === index;
 
                       return (
                         <div
                           key={`thumb-${index}`}
-                          onClick={() => onImageSelect(image, globalIndex)}
-                          className={`flex items-center p-2 rounded border cursor-pointer transition-all ${isSelected
+                          onClick={() => onImageSelect(image, index)}
+                          className={`flex flex-col p-2 rounded border cursor-pointer transition-all ${isSelected
                             ? 'border-orange-500 bg-orange-50 shadow-md'
                             : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                             }`}
                         >
-                          <div className="h-10 w-10 rounded overflow-hidden mr-2 flex-shrink-0">
+                          <div className="aspect-square rounded overflow-hidden mb-2">
                             <img
                               src={image?.s3Url}
-                              alt={`Thumbnail ${index}`}
+                              alt={`Thumbnail ${index + 1}`}
                               className="h-full w-full object-cover"
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-medium ${isSelected ? 'text-orange-700' : 'text-gray-600'
+                            <p className={`text-xs font-medium text-center ${isSelected ? 'text-orange-700' : 'text-gray-600'
                               }`}>
-                              {index === 0 ? 'Front' : 'Back'}
+                              Image {index + 1}
                             </p>
                             {image?.metadata?.caption && (
-                              <p className="text-xs text-gray-500 truncate mt-1">
+                              <p className="text-xs text-gray-500 truncate mt-1 text-center">
                                 {image.metadata.caption}
                               </p>
                             )}
                             {isSelected && (
-                              <p className="text-xs text-orange-600 mt-1">
-                                Click Editor to edit this image
+                              <p className="text-xs text-orange-600 mt-1 text-center">
+                                Selected
                               </p>
                             )}
                           </div>
                           {isSelected && (
-                            <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
+                            <div className="w-2 h-2 bg-orange-500 rounded-full mx-auto mt-1"></div>
                           )}
                         </div>
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {/* Show message when no images */}
+              {(!albumData?.images || albumData.images.length === 0) && (
+                <div className="text-center py-8">
+                  <ImagePlus size={32} className="mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">No images in your album yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Click "Add Photos" to get started</p>
                 </div>
               )}
 
@@ -2871,7 +2775,7 @@ const AsideToolsNavigation: React.FC<
           <div className="p-4 h-full">
             <div className="flex items-center justify-between mb-4">
               <button
-                onClick={() => setActivePanel(null)}
+                onClick={() => setActivePanel && setActivePanel(null)}
                 className="lg:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <X size={20} />

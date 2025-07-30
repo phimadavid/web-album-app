@@ -4,7 +4,7 @@ import { FlippingBookProps } from "../edit/data-types/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
-import bookHand from '../../../../public/images/book-hand.png';
+import bookHand from "../../../../public/images/book-hand.png";
 
 interface ExtendedFlippingBookProps extends FlippingBookProps {
   handleOrderNow: () => void;
