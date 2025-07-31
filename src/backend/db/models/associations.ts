@@ -97,3 +97,14 @@ User.hasMany(Order, {
   foreignKey: "userId",
   as: "orders",
 });
+
+// User-Album associations
+Album.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
+User.hasMany(Album, {
+  foreignKey: "userId",
+  as: "albums",
+});

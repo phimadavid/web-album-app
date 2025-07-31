@@ -20,6 +20,7 @@ class Album extends Model<InferAttributes<Album>, AlbumCreationAttributes> {
   declare name: string;
   declare termsAccepted: boolean;
   declare status: 'draft' | 'in_progress' | 'complete';
+  declare userId: CreationOptional<number>;
 
   declare readonly createdAt: CreationOptional<Date>;
   declare readonly updatedAt: CreationOptional<Date>;
@@ -44,6 +45,14 @@ Album.init(
     status: {
       type: DataTypes.ENUM('in_progress', 'completed', 'pending'),
       defaultValue: 'draft',
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Users',
+        key: 'id',
+      },
     },
     createdAt: {
       allowNull: false,

@@ -30,6 +30,7 @@ class User extends Model<InferAttributes<User>, UserCreationAttributes> {
   declare role: Role;
   declare googleId: string | null;
   declare image: string | null;
+  declare album_formats: any | null;
 
   // declare isEmailVerified: boolean;
 
@@ -66,6 +67,11 @@ User.init(
     image: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    album_formats: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
     },
     role: {
       allowNull: false,

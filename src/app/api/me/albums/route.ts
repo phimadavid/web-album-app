@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       name: body.name,
       termsAccepted: body.termsAccepted || false,
       status: body.status || 'draft',
+      userId: (session.user as any).id,
     };
 
     const album = await Album.create(albumData);
@@ -81,6 +82,9 @@ export async function GET(request: Request) {
 
     // Get all albums for the current user
     const albums = await Album.findAll({
+      where: {
+        userId: (session.user as any).id,
+      },
       order: [['createdAt', 'DESC']],
     });
 

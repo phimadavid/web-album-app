@@ -2,16 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Package, Truck, Check, AlertCircle } from 'lucide-react';
+import { X, ShoppingCart, Package, Truck, Check, AlertCircle, Settings, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'react-toastify';
 import { PricingService } from '@/backend/services/pricing.service';
+import { albumFormats } from '@/app/sample-data/album-formats';
 
 interface BookFormat {
     id: string;
     title: string;
     dimensions: string;
+    photosize: string;
+    coverType: string;
+    paperQuality: string;
+    albumId: string;
     softcover: number | null;
     hardcover: number | null;
     dutchBook: number;
@@ -49,6 +54,10 @@ const OrderModal: React.FC<OrderModalProps> = ({
     const [selectedShipping, setSelectedShipping] = useState<string>('');
     const [quantity, setQuantity] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
+    const [userAlbumFormats, setUserAlbumFormats] = useState<any>(null);
+    const [showAlbumFormats, setShowAlbumFormats] = useState(false);
+    const [selectedUserFormats, setSelectedUserFormats] = useState<string[]>([]);
+    const [isUpdatingFormats, setIsUpdatingFormats] = useState(false);
     const [pricing, setPricing] = useState({
         bookPrice: 0,
         shippingPrice: 0,
@@ -59,21 +68,19 @@ const OrderModal: React.FC<OrderModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             // Load book formats and shipping options
-            const formats = PricingService.getBookFormats();
+            fetchBookFormats();
             const shipping = PricingService.getShippingOptions();
-
-            setBookFormats(formats);
             setShippingOptions(shipping);
 
-            // Set default selections
-            if (formats.length > 0) {
-                setSelectedFormat(formats[0].id);
-            }
+            // Set default selections for shipping
             if (shipping.length > 0) {
                 setSelectedShipping(shipping[0].id);
             }
+
+            // Fetch user's album formats
+            fetchUserAlbumFormats();
         }
-    }, [isOpen]);
+    }, [isOpen, albumId]);
 
     useEffect(() => {
         if (selectedFormat && selectedCoverType && selectedShipping) {
@@ -183,6 +190,106 @@ const OrderModal: React.FC<OrderModalProps> = ({
         return shippingOptions.find(s => s.id === selectedShipping);
     };
 
+    const fetchBookFormats = async () => {
+        try {
+            const response = await fetch(`/api/book-formats?albumId=${albumId}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.bookFormats) {
+                    setBookFormats(data.bookFormats);
+                    // Set default selection
+                    if (data.bookFormats.length > 0) {
+                        setSelectedFormat(data.bookFormats[0].id);
+                    }
+                } else {
+                    // Fallback to PricingService if no formats found in database
+                    const fallbackFormats = PricingService.getBookFormats().map(format => ({
+                        ...format,
+                        photosize: 'standard',
+                        coverType: 'hardcover',
+                        paperQuality: 'premium',
+                        albumId: albumId
+                    }));
+                    setBookFormats(fallbackFormats);
+                    if (fallbackFormats.length > 0) {
+                        setSelectedFormat(fallbackFormats[0].id);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching book formats:', error);
+            // Fallback to PricingService on error
+            const fallbackFormats = PricingService.getBookFormats().map(format => ({
+                ...format,
+                photosize: 'standard',
+                coverType: 'hardcover',
+                paperQuality: 'premium',
+                albumId: albumId
+            }));
+            setBookFormats(fallbackFormats);
+            if (fallbackFormats.length > 0) {
+                setSelectedFormat(fallbackFormats[0].id);
+            }
+        }
+    };
+
+    const fetchUserAlbumFormats = async () => {
+        try {
+            const response = await fetch('/api/me/album-formats');
+            if (response.ok) {
+                const data = await response.json();
+                setUserAlbumFormats(data.album_formats);
+                if (data.album_formats?.selectedFormats) {
+                    setSelectedUserFormats(data.album_formats.selectedFormats);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user album formats:', error);
+        }
+    };
+
+    const handleToggleAlbumFormat = (formatName: string) => {
+        setSelectedUserFormats(prev => {
+            if (prev.includes(formatName)) {
+                return prev.filter(f => f !== formatName);
+            } else {
+                return [...prev, formatName];
+            }
+        });
+    };
+
+    const handleUpdateAlbumFormats = async () => {
+        try {
+            setIsUpdatingFormats(true);
+            const response = await fetch('/api/me/album-formats', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    album_formats: {
+                        selectedFormats: selectedUserFormats,
+                        updatedAt: new Date().toISOString(),
+                    }
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setUserAlbumFormats(data.album_formats);
+                toast.success('Album formats updated successfully');
+                setShowAlbumFormats(false);
+            } else {
+                toast.error('Failed to update album formats');
+            }
+        } catch (error) {
+            console.error('Error updating album formats:', error);
+            toast.error('Failed to update album formats');
+        } finally {
+            setIsUpdatingFormats(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -217,6 +324,112 @@ const OrderModal: React.FC<OrderModalProps> = ({
                         <p className="text-sm text-gray-600">
                             Configure your album book options below
                         </p>
+                    </div>
+
+                    {/* User Album Formats Section */}
+                    <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-medium text-gray-900">Your Preferred Album Formats</h4>
+                            <Button
+                                onClick={() => setShowAlbumFormats(!showAlbumFormats)}
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center space-x-2"
+                            >
+                                <Settings size={16} />
+                                <span>Manage</span>
+                            </Button>
+                        </div>
+                        
+                        {userAlbumFormats?.selectedFormats && userAlbumFormats.selectedFormats.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {userAlbumFormats.selectedFormats.map((formatName: string) => {
+                                    const format = albumFormats.find(f => f.name === formatName);
+                                    return (
+                                        <div key={formatName} className="flex items-center space-x-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                                            {format?.icon}
+                                            <span>{formatName}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-500">No preferred formats set. Click "Manage" to select your favorites.</p>
+                        )}
+
+                        {/* Album Formats Management Modal */}
+                        <AnimatePresence>
+                            {showAlbumFormats && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="mt-4 border-t pt-4"
+                                >
+                                    <h5 className="font-medium text-gray-900 mb-3">Select Your Preferred Album Formats</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                        {albumFormats.map((format) => (
+                                            <div
+                                                key={format.name}
+                                                onClick={() => handleToggleAlbumFormat(format.name)}
+                                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                                    selectedUserFormats.includes(format.name)
+                                                        ? 'border-blue-500 bg-blue-50'
+                                                        : 'border-gray-200 hover:border-gray-300'
+                                                }`}
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="flex-shrink-0">
+                                                        {format.icon}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <h6 className="font-medium text-sm">{format.name}</h6>
+                                                            <span className="text-sm font-medium text-blue-600">{format.price}</span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-600 mt-1">{format.description}</p>
+                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                            {format.dimensions.map((dim, index) => (
+                                                                <span key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                                                    {dim}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    {selectedUserFormats.includes(format.name) && (
+                                                        <Check size={16} className="text-blue-600" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-end space-x-2">
+                                        <Button
+                                            onClick={() => setShowAlbumFormats(false)}
+                                            variant="outline"
+                                            size="sm"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleUpdateAlbumFormats}
+                                            disabled={isUpdatingFormats}
+                                            size="sm"
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                        >
+                                            {isUpdatingFormats ? (
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                                    <span>Saving...</span>
+                                                </div>
+                                            ) : (
+                                                'Save Preferences'
+                                            )}
+                                        </Button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

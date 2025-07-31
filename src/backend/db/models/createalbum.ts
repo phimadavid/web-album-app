@@ -7,7 +7,7 @@ import {
 } from "sequelize";
 import { sequelize } from "./db";
 
-export type UserCreationAttributes = InferCreationAttributes<
+export type CreateAlbumCreationAttributes = InferCreationAttributes<
   CreateAlbum,
   {
     omit: "id" | "createdAt" | "updatedAt";
@@ -15,7 +15,7 @@ export type UserCreationAttributes = InferCreationAttributes<
 >;
 class CreateAlbum extends Model<
   InferAttributes<CreateAlbum>,
-  UserCreationAttributes
+  CreateAlbumCreationAttributes
 > {
   declare readonly id: CreationOptional<string>;
 
