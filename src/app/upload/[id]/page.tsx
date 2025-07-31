@@ -50,12 +50,6 @@ export default function UploadPage({ params }: { params: { id: string } }) {
       });
       setUploadComplete(true);
     },
-    onItemComplete: (item) => {
-      console.log("Upload completed for:", item.file.filename);
-    },
-    onItemError: (item) => {
-      console.error("Upload failed for:", item.file.filename, item.error);
-    },
   });
 
   useEffect(() => {
@@ -432,14 +426,55 @@ export default function UploadPage({ params }: { params: { id: string } }) {
     }
   };
 
+  // Store previous album ID to detect changes
+  const prevAlbumIdRef = useRef<string | null>(null);
+
+  // Reset uploaded images when album ID changes (when creating a new album)
+  useEffect(() => {
+    console.log('Album ID effect triggered:', {
+      currentId: params.id,
+      previousId: prevAlbumIdRef.current,
+      uploadedImagesCount: uploadedImages.length,
+      organizedImagesCount: organizedImages.length,
+      queueLength: uploadQueue.queue.length
+    });
+
+    // Check if this is actually a change (not initial mount)
+    if (prevAlbumIdRef.current !== null && prevAlbumIdRef.current !== params.id) {
+      console.log('Album ID changed from', prevAlbumIdRef.current, 'to', params.id, '- resetting state');
+      
+      // Clean up previous images' object URLs
+      cleanupObjectURLs([...uploadedImages, ...organizedImages]);
+      
+      // Clear upload queue and cancel any ongoing uploads
+      uploadQueue.clearAll();
+      
+      // Reset all state when album ID changes
+      setUploadedImages([]);
+      setOrganizedImages([]);
+      setUploadComplete(false);
+      setError("");
+      setIsProcessing(false);
+      setProcessingPhase("idle");
+      setSuggestedOrganization("none");
+      setOrganizationMethod("auto");
+      setProcessingProgress(undefined);
+      
+      // Clear file input if it exists
+      if (computerInputRef.current) {
+        computerInputRef.current.value = '';
+      }
+    }
+
+    // Update the previous album ID
+    prevAlbumIdRef.current = params.id;
+  }, [params.id, uploadedImages, organizedImages, uploadQueue.queue.length, uploadQueue.clearAll]);
+
   useEffect(() => {
     return () => {
       cleanupObjectURLs([...uploadedImages, ...organizedImages]);
     };
   }, []);
-
-
-
 
   return (
     <div className="min-h-screen">
