@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { FallingLines } from 'react-loader-spinner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Upload, Eye, Save } from 'lucide-react';
-import AutoTemplateGenerator from '../../../design/components/auto.template.generator';
+import { Upload, Eye } from 'lucide-react';
+
 import { ImageDataProps, TemplateGenerationProps } from '../../../design/types/template';
 import { withAuth } from '@/backend/withAuth';
 import AddPhotos from '../../../edit/components/addphotos';
+import AutoTemplateGenerator from '../../components/auto.template.generator';
 
 const UserDesignPage: React.FC<TemplateGenerationProps> = ({ params }) => {
     const router = useRouter();

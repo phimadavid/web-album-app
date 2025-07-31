@@ -335,7 +335,7 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({ albumId, 
             await axios.post('/api/book/apply-template', templateToApply);
 
             // Navigate to the album-book page with the albumId as a parameter
-            router.push(`me/edit/${albumId}`);
+            router.push(`/me/edit/${albumId}`);
 
         } catch (err) {
             setError(err instanceof Error ? err : new Error('Failed to navigate to album book'));
