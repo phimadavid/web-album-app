@@ -23,11 +23,9 @@ type AddPhotosProps = {
 }
 
 export default function AddPhotos({ params, onClose }: AddPhotosProps) {
-    const [isHaggadah, setIsHaggadah] = useState(false);
     const [uploadComplete, setUploadComplete] = useState(false);
     const [uploadedImages, setUploadedImages] = useState<EnhancedFile[]>([]);
     const [organizedImages, setOrganizedImages] = useState<EnhancedFile[]>([]);
-    const [suggestedOrganization, setSuggestedOrganization] = useState<string>("none");
 
     const [error, setError] = useState<string>("");
     const [isProcessing, setIsProcessing] = useState(false);
@@ -38,9 +36,9 @@ export default function AddPhotos({ params, onClose }: AddPhotosProps) {
     const dragAreaRef = useRef<HTMLDivElement>(null);
     const computerInputRef = useRef<HTMLInputElement>(null);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [organizationMethod, setOrganizationMethod] = useState<string>("auto");
+    const [organizationMethod] = useState<string>("auto");
     const [processingProgress, setProcessingProgress] = useState<number>();
-    const [pendingCoverAction, setPendingCoverAction] = useState<{ index: number, isUnset: boolean } | null>(null);
+    const [pendingCoverAction] = useState<{ index: number, isUnset: boolean } | null>(null);
 
     const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 
@@ -140,9 +138,6 @@ export default function AddPhotos({ params, onClose }: AddPhotosProps) {
         else if (datePercentage >= 30) {
             suggested = "date";
         }
-
-        // Store the suggested organization method
-        setSuggestedOrganization(suggested);
 
         // If we're in auto mode and have a suggestion, apply it
         if (organizationMethod === "auto" && suggested !== "none") {
@@ -432,23 +427,6 @@ export default function AddPhotos({ params, onClose }: AddPhotosProps) {
         }
     }, []);
 
-    const getOrganizationSummary = () => {
-        if (organizationMethod === "auto") {
-            switch (suggestedOrganization) {
-                case "event":
-                    return "Organized chronologically by events";
-                case "date":
-                    return "Organized by capture date";
-                case "location":
-                    return "Organized by location";
-                default:
-                    return "Original order";
-            }
-        } else {
-            return "Original order";
-        }
-    };
-
     useEffect(() => {
         return () => {
             cleanupObjectURLs([...uploadedImages, ...organizedImages]);
@@ -485,7 +463,6 @@ export default function AddPhotos({ params, onClose }: AddPhotosProps) {
             return prev;
         });
     };
-
 
     return (
         <div className="min-h-screen">
@@ -633,7 +610,6 @@ export default function AddPhotos({ params, onClose }: AddPhotosProps) {
                                 )}
                             </div>
                         ) : (
-
                             <>
                                 <div className="grid grid-cols-1 sm:grid-cols-2">
                                     <h2 className="text-xl col-start-2 font-semibold mb-4 text-end pr-8">Upload Complete</h2>
@@ -642,12 +618,6 @@ export default function AddPhotos({ params, onClose }: AddPhotosProps) {
                             </>
                         )}
                     </div>
-
-                    {isHaggadah && (
-                        <p className="text-sm text-gray-500">
-                            Haggadot prices will be updated at the checkout stage
-                        </p>
-                    )}
                 </div>
             </div>
 
