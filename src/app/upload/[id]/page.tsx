@@ -384,6 +384,9 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   const handleUploadConfirmed = async () => {
     setError("");
 
+    // Clear any existing upload queue before adding new files
+    uploadQueue.clearAll();
+    
     // Add files to upload queue and start uploading
     uploadQueue.addToQueue(organizedImages);
     uploadQueue.startUploads();
@@ -431,13 +434,6 @@ export default function UploadPage({ params }: { params: { id: string } }) {
 
   // Reset uploaded images when album ID changes (when creating a new album)
   useEffect(() => {
-    console.log('Album ID effect triggered:', {
-      currentId: params.id,
-      previousId: prevAlbumIdRef.current,
-      uploadedImagesCount: uploadedImages.length,
-      organizedImagesCount: organizedImages.length,
-      queueLength: uploadQueue.queue.length
-    });
 
     // Check if this is actually a change (not initial mount)
     if (prevAlbumIdRef.current !== null && prevAlbumIdRef.current !== params.id) {
