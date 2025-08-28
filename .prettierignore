@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+dist/
+build/
+
+# Generated files
+*.generated.*
+*.min.js
+*.min.css
+
+# Configuration files
+.env*
+*.lock
+package-lock.json
+yarn.lock
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Git
+.git/
+
+# Documentation that should maintain specific formatting
+README.md
+CHANGELOG.md
+LICENSE
+
+# Any markdown files that contain specific formatting
+*.md
+
+# Public assets
+public/
+
+# Compiled CSS (if using preprocessors)
+*.compiled.css
+
+# Any binary or image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+*.ico
+*.webp

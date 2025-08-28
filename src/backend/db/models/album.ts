@@ -1,72 +1,72 @@
 import {
-  Model,
-  DataTypes,
-  InferCreationAttributes,
-  InferAttributes,
-  CreationOptional,
-} from 'sequelize';
-import { sequelize } from './db';
+   Model,
+   DataTypes,
+   InferCreationAttributes,
+   InferAttributes,
+   CreationOptional,
+} from "sequelize";
+import { sequelize } from "./db";
 
 export type AlbumCreationAttributes = InferCreationAttributes<
-  Album,
-  {
-    omit: 'id' | 'createdAt' | 'updatedAt';
-  }
+   Album,
+   {
+      omit: "id" | "createdAt" | "updatedAt";
+   }
 >;
 
 class Album extends Model<InferAttributes<Album>, AlbumCreationAttributes> {
-  declare readonly id: CreationOptional<string>;
+   declare readonly id: CreationOptional<string>;
 
-  declare name: string;
-  declare termsAccepted: boolean;
-  declare status: 'draft' | 'in_progress' | 'complete';
-  declare userId: CreationOptional<number>;
+   declare name: string;
+   declare termsAccepted: boolean;
+   declare status: "draft" | "in_progress" | "complete";
+   declare userId: CreationOptional<number>;
 
-  declare readonly createdAt: CreationOptional<Date>;
-  declare readonly updatedAt: CreationOptional<Date>;
+   declare readonly createdAt: CreationOptional<Date>;
+   declare readonly updatedAt: CreationOptional<Date>;
 }
 
 Album.init(
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-      allowNull: false,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    termsAccepted: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    status: {
-      type: DataTypes.ENUM('in_progress', 'completed', 'pending'),
-      defaultValue: 'draft',
-    },
-    userId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'Users',
-        key: 'id',
+   {
+      id: {
+         type: DataTypes.UUID,
+         defaultValue: DataTypes.UUIDV4,
+         primaryKey: true,
+         allowNull: false,
       },
-    },
-    createdAt: {
-      allowNull: false,
-      type: DataTypes.DATE,
-    },
-    updatedAt: {
-      allowNull: false,
-      type: DataTypes.DATE,
-    },
-  },
-  {
-    sequelize,
-    modelName: 'Album',
-  }
+      name: {
+         type: DataTypes.STRING,
+         allowNull: false,
+      },
+      termsAccepted: {
+         type: DataTypes.BOOLEAN,
+         defaultValue: false,
+      },
+      status: {
+         type: DataTypes.ENUM("in_progress", "completed", "pending"),
+         defaultValue: "draft",
+      },
+      userId: {
+         type: DataTypes.INTEGER,
+         allowNull: true,
+         references: {
+            model: "Users",
+            key: "id",
+         },
+      },
+      createdAt: {
+         allowNull: false,
+         type: DataTypes.DATE,
+      },
+      updatedAt: {
+         allowNull: false,
+         type: DataTypes.DATE,
+      },
+   },
+   {
+      sequelize,
+      modelName: "Album",
+   }
 );
 
 export default Album;

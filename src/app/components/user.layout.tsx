@@ -6,20 +6,20 @@ import Header from "./header";
 import Footer from "./footer";
 
 const ClientLayout: React.FC<{ children: React.ReactNode }> = ({
-  children,
+   children,
 }) => {
-  const { status } = useSession();
-  const showHeader = status !== "authenticated";
+   const { status } = useSession();
+   const showHeader = status !== "authenticated";
 
-  return (
-    <div>
+   return (
       <div>
-        <Header />
-        {children}
-        {showHeader ? <Footer /> : null}
+         <div>
+            <Header />
+            {children}
+            {showHeader ? <Footer /> : null}
+         </div>
       </div>
-    </div>
-  );
+   );
 };
 
 export default ClientLayout;

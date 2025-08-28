@@ -1,118 +1,118 @@
 /* Custom scrollbar styles for caption text */
 .customScrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+   scrollbar-width: thin;
+   scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
 }
 
 .customScrollbar::-webkit-scrollbar {
-  width: 6px;
+   width: 6px;
 }
 
 .customScrollbar::-webkit-scrollbar-track {
-  background: transparent;
+   background: transparent;
 }
 
 .customScrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.5);
-  border-radius: 3px;
+   background-color: rgba(255, 255, 255, 0.5);
+   border-radius: 3px;
 }
 
 .customScrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.7);
+   background-color: rgba(255, 255, 255, 0.7);
 }
 
 /* Text overlay improvements */
 .textOverlay {
-  word-break: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  line-height: 1.4;
-  text-align: left;
+   word-break: break-word;
+   overflow-wrap: break-word;
+   hyphens: auto;
+   line-height: 1.4;
+   text-align: left;
 }
 
 /* Resizable text container */
 .resizableTextContainer {
-  resize: both;
-  overflow: auto;
-  min-width: 100px;
-  min-height: 40px;
-  max-width: 90%;
-  max-height: 70%;
-  border: 2px dashed rgba(59, 130, 246, 0.3);
-  transition: border-color 0.2s ease;
-  position: relative;
+   resize: both;
+   overflow: auto;
+   min-width: 100px;
+   min-height: 40px;
+   max-width: 90%;
+   max-height: 70%;
+   border: 2px dashed rgba(59, 130, 246, 0.3);
+   transition: border-color 0.2s ease;
+   position: relative;
 }
 
 .resizableTextContainer:hover {
-  border-color: rgba(59, 130, 246, 0.6);
+   border-color: rgba(59, 130, 246, 0.6);
 }
 
 .resizableTextContainer.dragging {
-  border-color: rgba(59, 130, 246, 0.8);
-  resize: none; /* Disable resize while dragging */
+   border-color: rgba(59, 130, 246, 0.8);
+   resize: none; /* Disable resize while dragging */
 }
 
 /* Custom resize handle styling - make it more visible */
 .resizableTextContainer::-webkit-resizer {
-  background: rgba(59, 130, 246, 0.9);
-  border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  width: 16px;
-  height: 16px;
+   background: rgba(59, 130, 246, 0.9);
+   border-radius: 3px;
+   border: 1px solid rgba(255, 255, 255, 0.3);
+   width: 16px;
+   height: 16px;
 }
 
 /* Add a resize indicator */
 .resizableTextContainer::after {
-  content: "↘";
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  font-size: 12px;
-  color: rgba(59, 130, 246, 0.7);
-  pointer-events: none;
-  line-height: 1;
+   content: "↘";
+   position: absolute;
+   bottom: 2px;
+   right: 2px;
+   font-size: 12px;
+   color: rgba(59, 130, 246, 0.7);
+   pointer-events: none;
+   line-height: 1;
 }
 
 .resizableTextContainer:hover::after {
-  color: rgba(59, 130, 246, 1);
+   color: rgba(59, 130, 246, 1);
 }
 
 /* Responsive text sizing */
 @media (max-width: 640px) {
-  .textOverlay {
-    font-size: 14px !important;
-    padding: 6px 10px !important;
-  }
+   .textOverlay {
+      font-size: 14px !important;
+      padding: 6px 10px !important;
+   }
 }
 
 /* Caption container improvements */
 .captionContainer {
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+   backdrop-filter: blur(2px);
+   -webkit-backdrop-filter: blur(2px);
 }
 
 /* Resizable caption boxes */
 .resizableCaption {
-  resize: vertical;
-  overflow: auto;
-  min-height: 80px;
-  max-height: 300px;
+   resize: vertical;
+   overflow: auto;
+   min-height: 80px;
+   max-height: 300px;
 }
 
 .resizableCaption::-webkit-scrollbar {
-  width: 8px;
+   width: 8px;
 }
 
 .resizableCaption::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+   background: #f1f1f1;
+   border-radius: 4px;
 }
 
 .resizableCaption::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+   background: #c1c1c1;
+   border-radius: 4px;
 }
 
 .resizableCaption::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+   background: #a8a8a8;
 }

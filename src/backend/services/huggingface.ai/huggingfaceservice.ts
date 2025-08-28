@@ -1,5 +1,5 @@
-import { inferLocationFromTimeZone } from '@/backend/helpers/inferlocation';
-import { EnhancedFile } from '@/backend/types/image';
+import { inferLocationFromTimeZone } from "@/backend/helpers/inferlocation";
+import { EnhancedFile } from "@/backend/types/image";
 
 /**
  * Process an image using the approach provided in your code snippet
@@ -9,134 +9,136 @@ import { EnhancedFile } from '@/backend/types/image';
  ***/
 
 export async function processImageWithHuggingFace(
-  file: File
+   file: File
 ): Promise<EnhancedFile> {
-  try {
-    // Create basic enhanced file
-    const enhancedFile: EnhancedFile = {
-      ...file,
-      originalFile: file,
-      filename: file.name,
-      preview: URL.createObjectURL(file),
-      metadata: {
-        captureDate: file.lastModified
-          ? new Date(file.lastModified)
-          : undefined,
-        labels: [],
-        tags: [],
-      },
-      height: 0,
-      width: 0,
-    };
+   try {
+      // Create basic enhanced file
+      const enhancedFile: EnhancedFile = {
+         ...file,
+         originalFile: file,
+         filename: file.name,
+         preview: URL.createObjectURL(file),
+         metadata: {
+            captureDate: file.lastModified
+               ? new Date(file.lastModified)
+               : undefined,
+            labels: [],
+            tags: [],
+         },
+         height: 0,
+         width: 0,
+      };
 
-    // Get image dimensions
-    const dimensions = await getImageDimensions(file);
-    enhancedFile.width = dimensions.width;
-    enhancedFile.height = dimensions.height;
+      // Get image dimensions
+      const dimensions = await getImageDimensions(file);
+      enhancedFile.width = dimensions.width;
+      enhancedFile.height = dimensions.height;
 
-    // Get image caption using the router approach
-    // const caption = await getCaptionFromAPI(file);
+      // Get image caption using the router approach
+      // const caption = await getCaptionFromAPI(file);
 
-    // if (caption) {
-    //   // Extract potential labels from the caption
-    //   const words = caption
-    //     .split(' ')
-    //     .map((word) => word.toLowerCase())
-    //     .filter((word) => word.length > 3) // Filter out short words
-    //     .map((word) => word.replace(/[.,;:!?]$/g, '')); // Remove punctuation
+      // if (caption) {
+      //   // Extract potential labels from the caption
+      //   const words = caption
+      //     .split(' ')
+      //     .map((word) => word.toLowerCase())
+      //     .filter((word) => word.length > 3) // Filter out short words
+      //     .map((word) => word.replace(/[.,;:!?]$/g, '')); // Remove punctuation
 
-    //   // Get unique words as potential tags
-    //   const uniqueWords = [...new Set(words)];
+      //   // Get unique words as potential tags
+      //   const uniqueWords = [...new Set(words)];
 
-    //   // Update the metadata
-    //   enhancedFile.metadata = {
-    //     ...enhancedFile.metadata,
-    //     caption: caption,
-    //     labels: uniqueWords.slice(0, 5).map((word) => ({
-    //       description: word,
-    //     })), // Use top 5 words as labels
-    //     tags: uniqueWords,
-    //   };
-    // }
+      //   // Update the metadata
+      //   enhancedFile.metadata = {
+      //     ...enhancedFile.metadata,
+      //     caption: caption,
+      //     labels: uniqueWords.slice(0, 5).map((word) => ({
+      //       description: word,
+      //     })), // Use top 5 words as labels
+      //     tags: uniqueWords,
+      //   };
+      // }
 
-    return enhancedFile;
-  } catch (error) {
-    console.error('Error processing image with Hugging Face Router:', error);
-    return {
-      ...file,
-      originalFile: file,
-      filename: file.name,
-      preview: URL.createObjectURL(file),
-      metadata: {
-        captureDate: file.lastModified
-          ? new Date(file.lastModified)
-          : undefined,
-      },
-      height: 0,
-      width: 0,
-    };
-  }
+      return enhancedFile;
+   } catch (error) {
+      console.error("Error processing image with Hugging Face Router:", error);
+      return {
+         ...file,
+         originalFile: file,
+         filename: file.name,
+         preview: URL.createObjectURL(file),
+         metadata: {
+            captureDate: file.lastModified
+               ? new Date(file.lastModified)
+               : undefined,
+         },
+         height: 0,
+         width: 0,
+      };
+   }
 }
 
 /** Gets the dimensions of an image file***/
 async function getImageDimensions(
-  file: File
+   file: File
 ): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      resolve({
-        width: img.width,
-        height: img.height,
-      });
-      URL.revokeObjectURL(img.src);
-    };
-    img.onerror = () => {
-      reject(new Error('Failed to load image'));
-      URL.revokeObjectURL(img.src);
-    };
-    img.src = URL.createObjectURL(file);
-  });
+   return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+         resolve({
+            width: img.width,
+            height: img.height,
+         });
+         URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => {
+         reject(new Error("Failed to load image"));
+         URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(file);
+   });
 }
 
 /** Gets the Timezone of an image file***/
 export async function processImageWithTimeZone(
-  file: File
+   file: File
 ): Promise<EnhancedFile> {
-  const enhancedFile: EnhancedFile = {
-    ...file,
-    originalFile: file,
-    filename: file.name,
-    preview: URL.createObjectURL(file),
-    metadata: {
-      captureDate: file.lastModified ? new Date(file.lastModified) : undefined,
-    },
-    height: 0,
-    width: 0,
-  };
+   const enhancedFile: EnhancedFile = {
+      ...file,
+      originalFile: file,
+      filename: file.name,
+      preview: URL.createObjectURL(file),
+      metadata: {
+         captureDate: file.lastModified
+            ? new Date(file.lastModified)
+            : undefined,
+      },
+      height: 0,
+      width: 0,
+   };
 
-  // Add location based on time zone
-  if (enhancedFile.metadata?.captureDate) {
-    const locationData = inferLocationFromTimeZone(
-      enhancedFile.metadata.captureDate
-    );
+   // Add location based on time zone
+   if (enhancedFile.metadata?.captureDate) {
+      const locationData = inferLocationFromTimeZone(
+         enhancedFile.metadata.captureDate
+      );
 
-    if (locationData) {
-      enhancedFile.metadata.location = {
-        name: locationData.region,
-        coordinates: locationData.coordinates,
-        confidence:
-          locationData.accuracy >= 0.8
-            ? 0.8
-            : locationData.accuracy >= 0.5
-              ? 0.5
-              : 0.3,
-        source: 'time-zone-inference' as string,
-      };
-    }
-  }
+      if (locationData) {
+         enhancedFile.metadata.location = {
+            name: locationData.region,
+            coordinates: locationData.coordinates,
+            confidence:
+               locationData.accuracy >= 0.8
+                  ? 0.8
+                  : locationData.accuracy >= 0.5
+                    ? 0.5
+                    : 0.3,
+            source: "time-zone-inference" as string,
+         };
+      }
+   }
 
-  return enhancedFile;
+   return enhancedFile;
 }
 
 /**
@@ -146,55 +148,55 @@ export async function processImageWithTimeZone(
  */
 
 export function organizeImagesByLocation(
-  images: EnhancedFile[]
+   images: EnhancedFile[]
 ): EnhancedFile[] {
-  // Group images by location name
-  const locationGroups: { [key: string]: EnhancedFile[] } = {};
+   // Group images by location name
+   const locationGroups: { [key: string]: EnhancedFile[] } = {};
 
-  // First add images with location data
-  images.forEach((img) => {
-    if (img.metadata?.location?.name) {
-      const locationKey = img.metadata.location.name;
-      if (!locationGroups[locationKey]) {
-        locationGroups[locationKey] = [];
+   // First add images with location data
+   images.forEach(img => {
+      if (img.metadata?.location?.name) {
+         const locationKey = img.metadata.location.name;
+         if (!locationGroups[locationKey]) {
+            locationGroups[locationKey] = [];
+         }
+         locationGroups[locationKey].push(img);
       }
-      locationGroups[locationKey].push(img);
-    }
-  });
+   });
 
-  // Then add images without location data at the end
-  const withLocation = Object.values(locationGroups).flat();
-  const withoutLocation = images.filter((img) => !img.metadata?.location?.name);
+   // Then add images without location data at the end
+   const withLocation = Object.values(locationGroups).flat();
+   const withoutLocation = images.filter(img => !img.metadata?.location?.name);
 
-  return [...withLocation, ...withoutLocation];
+   return [...withLocation, ...withoutLocation];
 }
 
 /**
  * Get caption by calling the Next.js API route
  */
 async function getCaptionFromAPI(file: File): Promise<string> {
-  try {
-    // Create FormData to send the file
-    const formData = new FormData();
-    formData.append('file', file);
+   try {
+      // Create FormData to send the file
+      const formData = new FormData();
+      formData.append("file", file);
 
-    // Call the API route
-    const response = await fetch('/api/caption', {
-      method: 'POST',
-      body: formData,
-    });
+      // Call the API route
+      const response = await fetch("/api/caption", {
+         method: "POST",
+         body: formData,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`API error: ${response.status} - ${errorData.error}`);
-    }
+      if (!response.ok) {
+         const errorData = await response.json();
+         throw new Error(`API error: ${response.status} - ${errorData.error}`);
+      }
 
-    const result = await response.json();
-    return result.caption || '';
-  } catch (error) {
-    console.error('Error getting image caption from API:', error);
-    return '';
-  }
+      const result = await response.json();
+      return result.caption || "";
+   } catch (error) {
+      console.error("Error getting image caption from API:", error);
+      return "";
+   }
 }
 
 /**

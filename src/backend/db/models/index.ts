@@ -15,17 +15,17 @@ import "./associations";
 -- */
 
 export default {
-  // diri ma export tanan ang models..
-  sequelize,
-  Sequelize,
-  User,
-  Album,
-  Image,
-  CreateAlbum,
-  Book,
-  Layout,
-  Cart,
-  AiGeneratedArt,
-  AiArtCart,
-  Order,
+   // diri ma export tanan ang models..
+   sequelize,
+   Sequelize,
+   User,
+   Album,
+   Image,
+   CreateAlbum,
+   Book,
+   Layout,
+   Cart,
+   AiGeneratedArt,
+   AiArtCart,
+   Order,
 };

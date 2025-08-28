@@ -5,53 +5,56 @@ import { usePathname } from "next/navigation";
 import { LogOut, BookOpen } from "lucide-react";
 
 type AsideNavigationProps = {
-    onLogout?: () => void;
+   onLogout?: () => void;
 };
 
 const AsideAdminNavigation: React.FC<AsideNavigationProps> = ({ onLogout }) => {
-    const pathname = usePathname();
+   const pathname = usePathname();
 
-    return (
-        <aside className="w-64 sticky top-0 min-h-screen bg-white shadow-lg">
-            <div className="p-4 flex flex-col h-full">
-                {/* Logo/Title */}
-                <div className="mb-8">
-                    <h2 className="text-lg font-semibold text-gray-900">Order Tracking</h2>
-                </div>
-
-                {/* Main Navigation */}
-                <div className="flex-1">
-                    <nav>
-                        <ul className="space-y-2">
-                            <li>
-                                <Link
-                                    href="/me/dashboard"
-                                    className={`flex items-center space-x-3 px-3 py-2.5 rounded-md ${pathname === "/me/dashboard"
-                                        ? "bg-blue-50 text-blue-700"
-                                        : "text-gray-600 hover:bg-gray-50"
-                                        }`}
-                                >
-                                    <BookOpen className="h-5 w-5" />
-                                    <span>Dashboard</span>
-                                </Link>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-
-                {/* Bottom section with logout */}
-                <div className="border-t pt-4">
-                    <button
-                        onClick={onLogout}
-                        className="flex items-center space-x-3 px-3 py-2.5 rounded-md text-gray-600 hover:bg-gray-50 w-full text-left"
-                    >
-                        <LogOut className="h-5 w-5" />
-                        <span>Logout</span>
-                    </button>
-                </div>
+   return (
+      <aside className="w-64 sticky top-0 min-h-screen bg-white shadow-lg">
+         <div className="p-4 flex flex-col h-full">
+            {/* Logo/Title */}
+            <div className="mb-8">
+               <h2 className="text-lg font-semibold text-gray-900">
+                  Order Tracking
+               </h2>
             </div>
-        </aside>
-    );
+
+            {/* Main Navigation */}
+            <div className="flex-1">
+               <nav>
+                  <ul className="space-y-2">
+                     <li>
+                        <Link
+                           href="/me/dashboard"
+                           className={`flex items-center space-x-3 px-3 py-2.5 rounded-md ${
+                              pathname === "/me/dashboard"
+                                 ? "bg-blue-50 text-blue-700"
+                                 : "text-gray-600 hover:bg-gray-50"
+                           }`}
+                        >
+                           <BookOpen className="h-5 w-5" />
+                           <span>Dashboard</span>
+                        </Link>
+                     </li>
+                  </ul>
+               </nav>
+            </div>
+
+            {/* Bottom section with logout */}
+            <div className="border-t pt-4">
+               <button
+                  onClick={onLogout}
+                  className="flex items-center space-x-3 px-3 py-2.5 rounded-md text-gray-600 hover:bg-gray-50 w-full text-left"
+               >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+               </button>
+            </div>
+         </div>
+      </aside>
+   );
 };
 
 export default AsideAdminNavigation;

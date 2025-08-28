@@ -1,68 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { options as authOptions } from '@/backend/utils/authOption';
-import User from '@/backend/db/models/user';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { options as authOptions } from "@/backend/utils/authOption";
+import User from "@/backend/db/models/user";
 
 export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+   try {
+      const session = await getServerSession(authOptions);
 
-    const user = await User.findOne({
-      where: { email: session.user.email },
-      attributes: ['album_formats']
-    });
+      if (!session?.user?.email) {
+         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+      const user = await User.findOne({
+         where: { email: session.user.email },
+         attributes: ["album_formats"],
+      });
 
-    return NextResponse.json({
-      album_formats: user.album_formats || null
-    });
+      if (!user) {
+         return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
 
-  } catch (error) {
-    console.error('Error fetching album formats:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({
+         album_formats: user.album_formats || null,
+      });
+   } catch (error) {
+      console.error("Error fetching album formats:", error);
+      return NextResponse.json(
+         { error: "Internal server error" },
+         { status: 500 }
+      );
+   }
 }
 
 export async function PUT(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+   try {
+      const session = await getServerSession(authOptions);
 
-    const { album_formats } = await request.json();
+      if (!session?.user?.email) {
+         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
 
-    const user = await User.findOne({
-      where: { email: session.user.email }
-    });
+      const { album_formats } = await request.json();
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+      const user = await User.findOne({
+         where: { email: session.user.email },
+      });
 
-    await user.update({ album_formats });
+      if (!user) {
+         return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
 
-    return NextResponse.json({
-      message: 'Album formats updated successfully',
-      album_formats: user.album_formats
-    });
+      await user.update({ album_formats });
 
-  } catch (error) {
-    console.error('Error updating album formats:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({
+         message: "Album formats updated successfully",
+         album_formats: user.album_formats,
+      });
+   } catch (error) {
+      console.error("Error updating album formats:", error);
+      return NextResponse.json(
+         { error: "Internal server error" },
+         { status: 500 }
+      );
+   }
 }
