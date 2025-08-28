@@ -242,7 +242,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                 }}
                                 title="Drag to move, resize with ↘ handle"
                             >
-                                <div 
+                                <div
                                     className={styles.textContent}
                                     contentEditable={true}
                                     suppressContentEditableWarning={true}
@@ -309,7 +309,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                         }}
                                         title="Drag to move, resize with ↘ handle"
                                     >
-                                        <div 
+                                        <div
                                             className={styles.textContent}
                                             contentEditable={true}
                                             suppressContentEditableWarning={true}
@@ -374,7 +374,7 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                         }}
                                         title="Drag to move, resize with ↘ handle"
                                     >
-                                        <div 
+                                        <div
                                             className={styles.textContent}
                                             contentEditable={true}
                                             suppressContentEditableWarning={true}

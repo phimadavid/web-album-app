@@ -39,9 +39,6 @@ interface UploadProgressOverlayProps {
 export function UploadProgressOverlay({
     queue,
     stats,
-    isUploading,
-    onPauseAll,
-    onResumeAll,
     onClearCompleted,
     onRetryItem,
     onPauseItem,
@@ -108,26 +105,10 @@ export function UploadProgressOverlay({
                         {stats.completed > 0 && (
                             <button
                                 onClick={onClearCompleted}
-                                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded"
+                                className="text-gray-500 hover:text-gray-700 p-1 rounded"
+                                title="Clear completed"
                             >
-                                Clear completed
-                            </button>
-                        )}
-                        {isUploading ? (
-                            <button
-                                onClick={onPauseAll}
-                                className="p-1 hover:bg-gray-100 rounded"
-                                title="Pause all"
-                            >
-                                <Pause size={16} className="text-gray-600" />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={onResumeAll}
-                                className="p-1 hover:bg-gray-100 rounded"
-                                title="Resume all"
-                            >
-                                <Play size={16} className="text-blue-600" />
+                                <X size={16} />
                             </button>
                         )}
                     </div>
