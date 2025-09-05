@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Layout } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layout, X } from "lucide-react";
 import { AlbumDataProps } from "../data-types/types";
 import styles from "./page-slider.module.css";
 
@@ -509,10 +509,20 @@ const PageSlider: React.FC<PageSliderProps> = ({
                            showLayoutSelector.pageIndex === 0 ? "60%" : "20%",
                      }}
                   >
-                     <div className="text-xs font-medium text-gray-700 mb-3 px-1">
-                        Choose Layout for{" "}
-                        {showLayoutSelector.pageIndex === 0 ? "Left" : "Right"}{" "}
-                        Page:
+                     {/* Header with title and close button */}
+                     <div className="flex items-center justify-between mb-3">
+                        <div className="text-xs font-medium text-gray-700 px-1">
+                           Choose Layout for{" "}
+                           {showLayoutSelector.pageIndex === 0 ? "Left" : "Right"}{" "}
+                           Page:
+                        </div>
+                        <button
+                           onClick={() => setShowLayoutSelector(null)}
+                           className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                           title="Close Layout Selector"
+                        >
+                           <X size={14} className="text-gray-500" />
+                        </button>
                      </div>
                      <div className="grid grid-cols-2 gap-2">
                         {availableLayouts.map(layoutOption => {

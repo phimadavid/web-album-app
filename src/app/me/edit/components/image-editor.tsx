@@ -2,6 +2,7 @@
 
 import "react-image-crop/dist/ReactCrop.css";
 import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { EnhancedFile, Position } from "@/backend/types/image";
 import {
    Edit,

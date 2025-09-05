@@ -69,20 +69,19 @@ export async function PATCH(
          );
       }
 
-      const layout = await Layout.findOne({
-         where: {
+      // Find or create the layout by albumId (upsert operation)
+      const [layout, created] = await Layout.findOrCreate({
+         where: { albumId: params.id },
+         defaults: {
             albumId: params.id,
+            layout: data.layout || "default",
          },
       });
 
-      if (!layout) {
-         return NextResponse.json(
-            { error: "Layout not found for this album" },
-            { status: 404 }
-         );
+      // If layout exists, update it with new data
+      if (!created) {
+         await layout.update(data);
       }
-
-      await layout.update(data);
 
       return NextResponse.json(layout);
    } catch (error) {

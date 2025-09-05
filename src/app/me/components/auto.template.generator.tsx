@@ -1,5 +1,6 @@
 "use client";
 import axios from "axios";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 
@@ -923,10 +924,11 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({
                                        <div className="absolute w-full inset-0 borders">
                                           {/* Background layer - Hugging Face generated image */}
                                           <div className="absolute inset-0 z-10">
-                                             <img
+                                             <Image
                                                 src={template.image}
                                                 alt={`${template.name} background`}
-                                                className="w-full h-full object-cover bg-white"
+                                                fill
+                                                className="object-cover bg-white"
                                                 onLoad={() =>
                                                    handleImageLoad(template.id)
                                                 }
@@ -935,6 +937,7 @@ const AutoTemplateGenerator: React.FC<AutoTemplateGeneratorProps> = ({
                                                    boxShadow:
                                                       "3px 3px 12px rgba(0,0,0,0.25)",
                                                 }}
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                              />
                                           </div>
 

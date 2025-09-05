@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 import axios from "axios";
 import Link from "next/link";
@@ -1439,11 +1440,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
                      position: "relative",
                   }}
                >
-                  <img
-                     src={image.s3Url}
+                  <Image
+                     src={image.s3Url || "/images/placeholder.png"}
                      alt={`Image ${index}`}
-                     className="w-full h-full"
+                     fill
+                     className="object-contain"
                      style={getImageStyle(image)}
+                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                     priority={index < 2}
                   />
                </div>
 
@@ -1524,11 +1528,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
                         style={getContainerStyle(leftImage)}
                         className="border-2 border-white w-full h-full"
                      >
-                        <img
-                           src={leftImage.s3Url}
+                        <Image
+                           src={leftImage.s3Url || "/images/placeholder.png"}
                            alt={`Image ${startIndex}`}
-                           className="w-full h-full"
+                           fill
+                           className="object-contain"
                            style={getImageStyle(leftImage)}
+                           sizes="(max-width: 768px) 100vw, 50vw"
+                           priority={startIndex < 2}
                         />
                      </div>
                      {/* Text Annotation for left image */}
@@ -1587,11 +1594,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
                         style={getContainerStyle(rightImage)}
                         className="border-2 border-white w-full h-full"
                      >
-                        <img
-                           src={rightImage.s3Url}
+                        <Image
+                           src={rightImage.s3Url || "/images/placeholder.png"}
                            alt={`Image ${startIndex + 1}`}
-                           className="w-full h-full"
+                           fill
+                           className="object-contain"
                            style={getImageStyle(rightImage)}
+                           sizes="(max-width: 768px) 100vw, 50vw"
+                           priority={startIndex < 2}
                         />
                      </div>
                      {/* Text Annotation for right image */}
@@ -1659,11 +1669,14 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
                         style={getContainerStyle(mainImage)}
                         className="border-2 border-white w-full h-full"
                      >
-                        <img
-                           src={mainImage.s3Url}
+                        <Image
+                           src={mainImage.s3Url || "/images/placeholder.png"}
                            alt={`Main Image ${startIndex}`}
-                           className="w-full h-full"
+                           fill
+                           className="object-contain"
                            style={getImageStyle(mainImage)}
+                           sizes="(max-width: 768px) 100vw, 66vw"
+                           priority={startIndex === 0}
                         />
                      </div>
                      {/* Text Annotation for main image */}
@@ -1727,11 +1740,13 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
                               style={getContainerStyle(image)}
                               className="border-2 border-white w-full h-full"
                            >
-                              <img
-                                 src={image.s3Url}
+                              <Image
+                                 src={image.s3Url || "/images/placeholder.png"}
                                  alt={`Thumbnail ${startIndex + 1 + index}`}
-                                 className="w-full h-full"
+                                 fill
+                                 className="object-contain"
                                  style={getImageStyle(image)}
+                                 sizes="(max-width: 768px) 33vw, 25vw"
                               />
                            </div>
                            {/* Text Annotation for thumbnail */}
@@ -1820,11 +1835,13 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
                               style={getContainerStyle(image)}
                               className="w-full aspect-square mb-3"
                            >
-                              <img
-                                 src={image.s3Url}
+                              <Image
+                                 src={image.s3Url || "/images/placeholder.png"}
                                  alt={`Polaroid ${startIndex + index}`}
-                                 className="w-full h-full"
+                                 fill
+                                 className="object-contain"
                                  style={getImageStyle(image)}
+                                 sizes="(max-width: 768px) 45vw, 25vw"
                               />
                            </div>
 
@@ -1915,11 +1932,16 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
                                     style={getContainerStyle(image)}
                                     className="border-2 border-white w-full h-full rounded-lg overflow-hidden"
                                  >
-                                    <img
-                                       src={image.s3Url}
+                                    <Image
+                                       src={
+                                          image.s3Url ||
+                                          "/images/placeholder.png"
+                                       }
                                        alt={`Timeline ${startIndex + index}`}
-                                       className="w-full h-full"
+                                       fill
+                                       className="object-contain"
                                        style={getImageStyle(image)}
+                                       sizes="96px"
                                     />
                                  </div>
 
@@ -2426,9 +2448,12 @@ const FlippingBook: React.FC<FlippingBookProps> = ({
             ) : (
                <div className="flex flex-col items-center gap-2 mb-5">
                   <div>
-                     <img
-                        src={bookHand.src}
-                        className="w-[100px] h-[100px] object-contain"
+                     <Image
+                        src={bookHand}
+                        alt="Book in hand"
+                        width={100}
+                        height={100}
+                        className="object-contain"
                      />
                   </div>
                   <div className="flex flex-col max-w-[600px] justify-center text-center items-center gap-2">
@@ -2917,11 +2942,16 @@ const AsideNavigation: React.FC<AsideNavigationProps> = ({
                                           : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
                                     }`}
                                  >
-                                    <div className="aspect-square rounded overflow-hidden mb-2">
-                                       <img
-                                          src={image?.s3Url}
+                                    <div className="aspect-square rounded overflow-hidden mb-2 relative">
+                                       <Image
+                                          src={
+                                             image?.s3Url ||
+                                             "/images/placeholder.png"
+                                          }
                                           alt={`Thumbnail ${index + 1}`}
-                                          className="h-full w-full object-cover"
+                                          fill
+                                          className="object-cover"
+                                          sizes="(max-width: 768px) 25vw, 15vw"
                                        />
                                     </div>
                                     <div className="flex-1 min-w-0">

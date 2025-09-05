@@ -44,8 +44,8 @@ export default function RootLayout({
             <Provider>
                <ClientLayout>{children}</ClientLayout>
             </Provider>
+            <ToastContainer position="bottom-right" />
          </body>
-         <ToastContainer position="bottom-right" />
       </html>
    );
 }

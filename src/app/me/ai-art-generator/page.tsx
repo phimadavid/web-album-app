@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { generateTemplateImage } from "@/lib/services/hf.generate.template";
 import axios from "axios";
@@ -718,11 +719,13 @@ const AIArtGeneratorPage = () => {
                            className="bg-white rounded-2xl p-6 shadow-sm"
                         >
                            <div className="grid md:grid-cols-2 gap-6">
-                              <div className="aspect-[4/3] rounded-xl overflow-hidden">
-                                 <img
+                              <div className="aspect-[4/3] rounded-xl overflow-hidden relative">
+                                 <Image
                                     src={image.url}
                                     alt={`Generated art: ${image.prompt}`}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 100vw, 50vw"
                                  />
                               </div>
                               <div className="flex flex-col justify-between">
@@ -807,11 +810,13 @@ const AIArtGeneratorPage = () => {
                               key={image.id}
                               className="bg-white rounded-xl p-4 shadow-sm"
                            >
-                              <div className="aspect-square rounded-lg overflow-hidden mb-3">
-                                 <img
+                              <div className="aspect-square rounded-lg overflow-hidden mb-3 relative">
+                                 <Image
                                     src={image.url}
                                     alt={`Saved art: ${image.prompt}`}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                                  />
                               </div>
                               <h4 className="font-medium text-gray-900 mb-2 line-clamp-2">
