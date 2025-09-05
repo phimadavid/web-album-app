@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Layout } from "lucide-react";
+import Image from "next/image";
+import { ChevronLeft, ChevronRight, Layout, X } from "lucide-react";
 import { AlbumDataProps } from "../data-types/types";
 import styles from "./page-slider.module.css";
 
@@ -222,11 +223,14 @@ const PageSlider: React.FC<PageSliderProps> = ({
                      position: "relative",
                   }}
                >
-                  <img
-                     src={image.s3Url}
+                  <Image
+                     src={image.s3Url || "/images/placeholder.png"}
                      alt={`Image ${index}`}
-                     className="w-full h-full"
+                     fill
+                     className="object-contain"
                      style={getImageStyle(image)}
+                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                     priority={index < 2}
                   />
                </div>
 
@@ -302,11 +306,14 @@ const PageSlider: React.FC<PageSliderProps> = ({
                               : "border-white hover:border-orange-300 hover:shadow-md"
                         }`}
                      >
-                        <img
-                           src={leftImage.s3Url}
+                        <Image
+                           src={leftImage.s3Url || "/images/placeholder.png"}
                            alt={`Image ${startIndex}`}
-                           className="w-full h-full"
+                           fill
+                           className="object-contain"
                            style={getImageStyle(leftImage)}
+                           sizes="(max-width: 768px) 100vw, 50vw"
+                           priority={startIndex < 2}
                         />
                      </div>
                      {(() => {
@@ -384,11 +391,14 @@ const PageSlider: React.FC<PageSliderProps> = ({
                               : "border-white hover:border-orange-300 hover:shadow-md"
                         }`}
                      >
-                        <img
-                           src={rightImage.s3Url}
+                        <Image
+                           src={rightImage.s3Url || "/images/placeholder.png"}
                            alt={`Image ${startIndex + 1}`}
-                           className="w-full h-full"
+                           fill
+                           className="object-contain"
                            style={getImageStyle(rightImage)}
+                           sizes="(max-width: 768px) 100vw, 50vw"
+                           priority={startIndex < 2}
                         />
                      </div>
                      {(() => {
@@ -492,11 +502,14 @@ const PageSlider: React.FC<PageSliderProps> = ({
                               : "border-white hover:border-orange-300 hover:shadow-md"
                         }`}
                      >
-                        <img
-                           src={mainImage.s3Url}
+                        <Image
+                           src={mainImage.s3Url || "/images/placeholder.png"}
                            alt={`Main Image ${startIndex}`}
-                           className="w-full h-full"
+                           fill
+                           className="object-contain"
                            style={getImageStyle(mainImage)}
+                           sizes="(max-width: 768px) 100vw, 66vw"
+                           priority={startIndex === 0}
                         />
                      </div>
                      {(() => {
@@ -567,11 +580,13 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                     : "border-white hover:border-orange-300 hover:shadow-md"
                               }`}
                            >
-                              <img
-                                 src={image.s3Url}
+                              <Image
+                                 src={image.s3Url || "/images/placeholder.png"}
                                  alt={`Thumbnail ${startIndex + 1 + index}`}
-                                 className="w-full h-full"
+                                 fill
+                                 className="object-contain"
                                  style={getImageStyle(image)}
+                                 sizes="(max-width: 768px) 33vw, 25vw"
                               />
                            </div>
                            {(() => {
@@ -667,11 +682,13 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                     : "border-2 border-white hover:border-orange-300 hover:shadow-md"
                               }`}
                            >
-                              <img
-                                 src={image.s3Url}
+                              <Image
+                                 src={image.s3Url || "/images/placeholder.png"}
                                  alt={`Polaroid ${startIndex + index}`}
-                                 className="w-full h-full"
+                                 fill
+                                 className="object-contain"
                                  style={getImageStyle(image)}
+                                 sizes="(max-width: 768px) 45vw, 25vw"
                               />
                            </div>
 
@@ -768,11 +785,16 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                           : "border-white hover:border-orange-300 hover:shadow-md"
                                     }`}
                                  >
-                                    <img
-                                       src={image.s3Url}
+                                    <Image
+                                       src={
+                                          image.s3Url ||
+                                          "/images/placeholder.png"
+                                       }
                                        alt={`Timeline ${startIndex + index}`}
-                                       className="w-full h-full"
+                                       fill
+                                       className="object-contain"
                                        style={getImageStyle(image)}
+                                       sizes="96px"
                                     />
                                  </div>
 
@@ -904,8 +926,18 @@ const PageSlider: React.FC<PageSliderProps> = ({
             {/* Layout selector dropdown */}
             {showLayoutSelector && (
                <div className="absolute top-12 right-2 z-30 bg-white rounded-lg shadow-xl border border-gray-200 p-3 min-w-64">
-                  <div className="text-xs font-medium text-gray-700 mb-3 px-1">
-                     Choose Layout:
+                  {/* Header with title and close button */}
+                  <div className="flex items-center justify-between mb-3">
+                     <div className="text-xs font-medium text-gray-700 px-1">
+                        Choose Layout:
+                     </div>
+                     <button
+                        onClick={() => setShowLayoutSelector(false)}
+                        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                        title="Close Layout Selector"
+                     >
+                        <X size={14} className="text-gray-500" />
+                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                      {availableLayouts.map(layoutOption => (
@@ -1107,13 +1139,19 @@ const PageSlider: React.FC<PageSliderProps> = ({
                                        position: "relative",
                                     }}
                                  >
-                                    <img
-                                       src={imageData[startIndex].s3Url}
+                                    <Image
+                                       src={
+                                          imageData[startIndex].s3Url ||
+                                          "/images/placeholder.png"
+                                       }
                                        alt={`Image ${startIndex + 1}`}
-                                       className="w-full h-full object-cover"
+                                       fill
+                                       className="object-cover"
                                        style={getImageStyle(
                                           imageData[startIndex]
                                        )}
+                                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                       priority={startIndex === 0}
                                     />
                                  </div>
 
@@ -1191,11 +1229,17 @@ const PageSlider: React.FC<PageSliderProps> = ({
                            position: "relative",
                         }}
                      >
-                        <img
-                           src={imageData[startIndex].s3Url}
+                        <Image
+                           src={
+                              imageData[startIndex].s3Url ||
+                              "/images/placeholder.png"
+                           }
                            alt={`Image ${startIndex + 1}`}
-                           className="w-full h-full object-cover"
+                           fill
+                           className="object-cover"
                            style={getImageStyle(imageData[startIndex])}
+                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                           priority={startIndex === 0}
                         />
                      </div>
 

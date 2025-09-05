@@ -96,7 +96,7 @@ export function UploadProgressOverlay({
    };
 
    return (
-      <div className="fixed bottom-4 right-4 w-96 max-h-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+      <div className="fixed bottom-4 left-4 w-96 max-h-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
          {/* Header */}
          <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">

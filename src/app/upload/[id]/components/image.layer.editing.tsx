@@ -1,6 +1,7 @@
 "use client";
 import "react-image-crop/dist/ReactCrop.css";
 import React from "react";
+import Image from "next/image";
 
 import { EnhancedFile } from "@/backend/types/image";
 import { X } from "lucide-react";
@@ -24,10 +25,13 @@ const EditableImage: React.FC<EditableImageProps> = ({
          <div className="flex flex-row justify-end space-x-4">
             <div className="relative aspect-square w-2/3">
                <div className="absolute inset-0 overflow-hidden">
-                  <img
-                     src={file.preview}
+                  <Image
+                     src={file.preview || "/images/placeholder.png"}
                      alt={`Uploaded ${index + 1}`}
-                     className="absolute inset-0 w-full h-full object-contain rounded"
+                     fill
+                     className="object-contain rounded"
+                     sizes="(max-width: 768px) 50vw, 33vw"
+                     priority={index < 4}
                   />
                </div>
 

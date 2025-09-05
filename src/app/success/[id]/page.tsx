@@ -805,10 +805,12 @@ export default function SuccessPage({ params }: { params: { id: string } }) {
                               img => img.id === currentImage
                            ) && (
                               <div className="relative w-full h-full">
-                                 <img
+                                 <Image
                                     src={`/api/image/${encodeURIComponent(album.AlbumImages.find(img => img.id === currentImage)?.filename || "")}`}
                                     alt="Image preview"
-                                    className="w-full h-full object-contain"
+                                    fill
+                                    className="object-contain"
+                                    sizes="(max-width: 768px) 100vw, 70vw"
                                  />
 
                                  {/* Draggable text overlay */}

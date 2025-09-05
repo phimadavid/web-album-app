@@ -2,6 +2,7 @@
 import { EnhancedFile } from "@/backend/types/image";
 import { Cloud, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import React, { useState } from "react";
 
 type addPhotoViewGridProps = {
@@ -109,14 +110,18 @@ const AddPhotoViewGrid: React.FC<addPhotoViewGridProps> = ({
                               )}
 
                               <div className="w-full h-full relative overflow-hidden">
-                                 <img
-                                    src={file.preview || ""}
+                                 <Image
+                                    src={
+                                       file.preview || "/images/placeholder.png"
+                                    }
                                     alt={file.filename || `Image ${index + 1}`}
-                                    className="absolute w-full h-full object-contain"
+                                    fill
+                                    className="object-contain"
                                     style={{
                                        transform: combinedTransform || "none",
                                        transformOrigin: transformOrigin,
                                     }}
+                                    sizes="(max-width: 768px) 50vw, 25vw"
                                  />
                               </div>
 

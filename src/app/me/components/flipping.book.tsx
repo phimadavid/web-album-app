@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { FlippingBookProps } from "../edit/data-types/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -285,11 +286,14 @@ const FlippingBook: React.FC<ExtendedFlippingBookProps> = ({
                      position: "relative",
                   }}
                >
-                  <img
-                     src={image.s3Url}
+                  <Image
+                     src={image.s3Url || "/images/placeholder.png"}
                      alt={`Image ${index}`}
-                     className="w-full h-full"
+                     fill
+                     className="object-contain"
                      style={getImageStyle(image)}
+                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                     priority={index < 2}
                   />
                </div>
 
@@ -370,11 +374,14 @@ const FlippingBook: React.FC<ExtendedFlippingBookProps> = ({
                         style={getContainerStyle(leftImage)}
                         className="border-2 border-white w-full h-full"
                      >
-                        <img
-                           src={leftImage.s3Url}
+                        <Image
+                           src={leftImage.s3Url || "/images/placeholder.png"}
                            alt={`Image ${startIndex}`}
-                           className="w-full h-full"
+                           fill
+                           className="object-contain"
                            style={getImageStyle(leftImage)}
+                           sizes="(max-width: 768px) 100vw, 50vw"
+                           priority={startIndex < 2}
                         />
                      </div>
                      {/* Text Annotation for left image */}
