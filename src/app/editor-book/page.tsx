@@ -1466,11 +1466,24 @@ const PhotobookEditor: React.FC<PhotobookEditorProps> = ({
                     </div>
                 </div>
 
-                {/* Right Properties Panel */}
+                {/* Right Properties Panel - Hover to Reveal */}
                 {selectedElement && (
-                    <div className="w-80 bg-white border-l p-4">
-                        <h3 className="font-semibold mb-4">Properties</h3>
-                        <div className="space-y-4">
+                    <div className="group fixed right-0 top-0 h-full z-30">
+                        {/* Hover trigger area - always visible thin strip */}
+                        <div className="absolute right-0 top-0 w-4 h-full bg-blue-500 bg-opacity-20 hover:bg-opacity-40 transition-all duration-200 cursor-pointer flex items-center justify-center">
+                            <div className="w-1 h-8 bg-blue-600 rounded-full"></div>
+                        </div>
+                        
+                        {/* Panel content - slides in from right on hover */}
+                        <div className="absolute right-0 top-0 w-80 h-full bg-white border-l shadow-2xl transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out overflow-y-auto">
+                            <div className="p-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-semibold">Properties</h3>
+                                    <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                        Hover to keep open
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-2">Position</label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -1555,6 +1568,8 @@ const PhotobookEditor: React.FC<PhotobookEditorProps> = ({
                                     <Trash2 className="w-4 h-4" />
                                     Delete Element
                                 </button>
+                            </div>
+                        </div>
                             </div>
                         </div>
                     </div>
