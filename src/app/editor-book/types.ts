@@ -27,6 +27,20 @@ export interface ImageElement extends BaseElement {
    opacity?: number;
    filter?: string;
    borderRadius?: number;
+   // Image Effects
+   brightness?: number;
+   contrast?: number;
+   saturation?: number;
+   blur?: number;
+   hue?: number;
+   // Border Effects
+   borderWidth?: number;
+   borderColor?: string;
+   // Shadow Effects
+   shadowBlur?: number;
+   shadowX?: number;
+   shadowY?: number;
+   shadowColor?: string;
 }
 
 export interface TextElement extends BaseElement {
