@@ -1344,7 +1344,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                     ));
                 }
 
-                toast.info('Using sample caption - AI service may not be available');
             }
         } catch (error) {
             console.error('Error generating AI caption:', error);
@@ -1381,7 +1380,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 ));
             }
 
-            toast.info('Added sample caption - AI service not available');
         } finally {
             setIsGeneratingCaption(false);
         }
@@ -1834,20 +1832,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         title="Add Sticker"
                     >
                         <Sticker className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setShowTemplates(!showTemplates);
-                            setShowImagePanel(false);
-                            setShowDrawPanel(false);
-                            setShowStickerPanel(false);
-                            setShowBackgroundPanel(false);
-                            setShowAdvancedTextPanel(false);
-                        }}
-                        className={`p-3 rounded-lg transition-colors ${showTemplates ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
-                        title="Templates"
-                    >
-                        <Grid className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => {
