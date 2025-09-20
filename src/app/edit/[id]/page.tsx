@@ -13,7 +13,6 @@ import {
     ImageElement,
     TextElement,
     DrawingElement,
-    StickerElement,
     DrawingPath,
     Page,
     Template,
@@ -37,8 +36,8 @@ import {
 
 import { useAlbumData } from "@/backend/services/actions/getAlbums";
 import {
-   AlbumDataProps,
-   BookAlbumPageProps,
+    AlbumDataProps,
+    BookAlbumPageProps,
 } from "../data-types/types";
 
 const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
@@ -105,8 +104,13 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const [loadingRecentImages, setLoadingRecentImages] = useState<boolean>(false);
     const [isResizing, setIsResizing] = useState<boolean>(false);
     const [resizeHandle, setResizeHandle] = useState<string>('');
-    const [resizeStartPos, setResizeStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-    const [resizeStartSize, setResizeStartSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+    const [isGeneratingCaption, setIsGeneratingCaption] = useState<boolean>(false);
+    const [showCaptionButton, setShowCaptionButton] = useState<boolean>(false);
+    const [generatedCaption, setGeneratedCaption] = useState<string>('');
+    const [showLayoutButton, setShowLayoutButton] = useState<boolean>(false);
+    const [isGeneratingLayout, setIsGeneratingLayout] = useState<boolean>(false);
+    const [layoutButtonPosition, setLayoutButtonPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [currentLayoutIndex, setCurrentLayoutIndex] = useState<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -131,7 +135,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
         const pages: Page[] = [];
         const imagesPerPage = 2; // Adjust based on your layout preference
-        
+
         // Create pages with images
         for (let i = 0; i < albumData.images.length; i += imagesPerPage) {
             const pageImages = albumData.images.slice(i, i + imagesPerPage);
@@ -143,13 +147,13 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         // Position images side by side or in a grid
                         const x = index === 0 ? 50 : 270;
                         const y = 50;
-                        
+
                         const imageElement = createImageElement(
                             { x, y },
                             image.s3Url,
-                            { 
-                                width: 200, 
-                                height: 150, 
+                            {
+                                width: 200,
+                                height: 150,
                                 rotation: image.metadata?.rotation || 0,
                                 alt: `Image ${i + index + 1}`
                             }
@@ -270,10 +274,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             if (response.ok) {
                 const data = await response.json();
                 const backgroundUrl = data.imageUrl;
-                
+
                 // Apply the generated background
                 applyBackgroundImage(backgroundUrl);
-                
+
                 toast.success('AI background generated successfully!');
                 setAiPrompt('');
             } else {
@@ -295,8 +299,8 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
     // Apply background image with intensity
     const applyBackgroundImage = useCallback((imageUrl: string) => {
-        const targetPages = backgroundScope === 'all' ? 
-            Array.from({ length: pages.length }, (_, i) => i) : 
+        const targetPages = backgroundScope === 'all' ?
+            Array.from({ length: pages.length }, (_, i) => i) :
             [selectedPageIndex];
 
         setPages(prevPages => prevPages.map((page, index) => {
@@ -460,12 +464,12 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     // Enhanced add text element with Smart Text & Storytelling Suite
     const addText = useCallback((position?: { x: number; y: number }): void => {
         const textPosition = position || { x: 150, y: 150 };
-        
+
         // Show advanced text panel instead of simple input
         setTextInputPosition(textPosition);
         setTextInputValue('');
         setShowAdvancedTextPanel(true);
-        
+
         // Focus the input after a brief delay to ensure it's rendered
         setTimeout(() => {
             textInputRef.current?.focus();
@@ -480,9 +484,9 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             const currentPage = pages[selectedPageIndex];
             const imageElements = currentPage.elements.filter(el => el.type === 'image');
             const hasImages = imageElements.length > 0;
-            
+
             // Mock AI content generation based on context
-            const contextPrompt = hasImages 
+            const contextPrompt = hasImages
                 ? `Generate ${aiContentType} for a photo album page with ${imageElements.length} image(s). Tone: ${aiTone}, Style: ${aiStyle}`
                 : `Generate ${aiContentType} for a photo album page. Tone: ${aiTone}, Style: ${aiStyle}`;
 
@@ -632,7 +636,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         const typeData = suggestions[type] || suggestions.caption;
         const toneData = typeData[tone] || typeData.casual;
         const styleData = toneData[style] || toneData.single;
-        
+
         return styleData || [
             "A beautiful moment captured in time.",
             "Memories that will last forever.",
@@ -733,7 +737,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             setTextInputValue('');
             setAiSuggestions([]);
             setSelectedSuggestion('');
-            
+
             toast.success('Text added successfully!');
         } catch (error) {
             const editorError = handleError(error, 'Create advanced text element');
@@ -816,24 +820,24 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const handleResizeStart = useCallback((e: React.MouseEvent, handle: string, element: Element): void => {
         e.stopPropagation();
         e.preventDefault();
-        
+
         const startPos = { x: e.clientX, y: e.clientY };
         const startSize = { width: element.width, height: element.height };
         const startPosition = { x: element.x, y: element.y };
-        
+
         setIsResizing(true);
         setResizeHandle(handle);
-        
+
         // Add global mouse event listeners
         const handleMouseMove = (e: MouseEvent) => {
             const deltaX = e.clientX - startPos.x;
             const deltaY = e.clientY - startPos.y;
-            
+
             let newWidth = startSize.width;
             let newHeight = startSize.height;
             let newX = startPosition.x;
             let newY = startPosition.y;
-            
+
             // Calculate new dimensions based on resize handle
             switch (handle) {
                 case 'se': // Bottom-right
@@ -871,13 +875,13 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                     newX = startPosition.x + (startSize.width - newWidth);
                     break;
             }
-            
+
             // Ensure element stays within page bounds
             newX = Math.max(0, Math.min(newX, DEFAULT_PAGE_SIZE.width - newWidth));
             newY = Math.max(0, Math.min(newY, DEFAULT_PAGE_SIZE.height - newHeight));
             newWidth = Math.min(newWidth, DEFAULT_PAGE_SIZE.width - newX);
             newHeight = Math.min(newHeight, DEFAULT_PAGE_SIZE.height - newY);
-            
+
             // Update element
             updateElement(element.id, {
                 x: newX,
@@ -886,14 +890,14 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 height: newHeight
             });
         };
-        
+
         const handleMouseUp = () => {
             setIsResizing(false);
             setResizeHandle('');
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-        
+
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
     }, [updateElement]);
@@ -901,19 +905,19 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     // Render resize handles for selected element
     const renderResizeHandles = useCallback((element: Element) => {
         if (!selectedElement || selectedElement.id !== element.id) return null;
-        
+
         const handleSize = 8;
         const handles = [
-            { position: 'nw', cursor: 'nw-resize', style: { top: -handleSize/2, left: -handleSize/2 } },
-            { position: 'n', cursor: 'n-resize', style: { top: -handleSize/2, left: '50%', transform: 'translateX(-50%)' } },
-            { position: 'ne', cursor: 'ne-resize', style: { top: -handleSize/2, right: -handleSize/2 } },
-            { position: 'e', cursor: 'e-resize', style: { top: '50%', right: -handleSize/2, transform: 'translateY(-50%)' } },
-            { position: 'se', cursor: 'se-resize', style: { bottom: -handleSize/2, right: -handleSize/2 } },
-            { position: 's', cursor: 's-resize', style: { bottom: -handleSize/2, left: '50%', transform: 'translateX(-50%)' } },
-            { position: 'sw', cursor: 'sw-resize', style: { bottom: -handleSize/2, left: -handleSize/2 } },
-            { position: 'w', cursor: 'w-resize', style: { top: '50%', left: -handleSize/2, transform: 'translateY(-50%)' } }
+            { position: 'nw', cursor: 'nw-resize', style: { top: -handleSize / 2, left: -handleSize / 2 } },
+            { position: 'n', cursor: 'n-resize', style: { top: -handleSize / 2, left: '50%', transform: 'translateX(-50%)' } },
+            { position: 'ne', cursor: 'ne-resize', style: { top: -handleSize / 2, right: -handleSize / 2 } },
+            { position: 'e', cursor: 'e-resize', style: { top: '50%', right: -handleSize / 2, transform: 'translateY(-50%)' } },
+            { position: 'se', cursor: 'se-resize', style: { bottom: -handleSize / 2, right: -handleSize / 2 } },
+            { position: 's', cursor: 's-resize', style: { bottom: -handleSize / 2, left: '50%', transform: 'translateX(-50%)' } },
+            { position: 'sw', cursor: 'sw-resize', style: { bottom: -handleSize / 2, left: -handleSize / 2 } },
+            { position: 'w', cursor: 'w-resize', style: { top: '50%', left: -handleSize / 2, transform: 'translateY(-50%)' } }
         ];
-        
+
         return (
             <>
                 {handles.map((handle) => (
@@ -942,24 +946,24 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             offsetY: e.clientY - rect.top,
             elementId: element.id
         };
-        
+
         // Set drag image for smoother visual feedback
         const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
         dragImage.style.transform = 'rotate(0deg)';
         dragImage.style.opacity = '0.8';
         document.body.appendChild(dragImage);
         e.dataTransfer.setDragImage(dragImage, dragData.offsetX, dragData.offsetY);
-        
+
         // Clean up drag image after a short delay
         setTimeout(() => {
             if (document.body.contains(dragImage)) {
                 document.body.removeChild(dragImage);
             }
         }, 0);
-        
+
         e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
         e.dataTransfer.effectAllowed = 'move';
-        
+
         // Add visual feedback to original element
         e.currentTarget.style.opacity = '0.5';
     }, []);
@@ -978,17 +982,17 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         const rect = e.currentTarget.getBoundingClientRect();
         try {
             const data: DragData = JSON.parse(e.dataTransfer.getData('text/plain'));
-            
+
             // Calculate new position with smooth snapping
             const rawX = e.clientX - rect.left - data.offsetX;
             const rawY = e.clientY - rect.top - data.offsetY;
-            
+
             // Smooth boundary constraints
             const newX = Math.max(0, Math.min(rawX, DEFAULT_PAGE_SIZE.width - draggedElement.width));
             const newY = Math.max(0, Math.min(rawY, DEFAULT_PAGE_SIZE.height - draggedElement.height));
 
             // Find the source page index
-            const sourcePageIndex = pages.findIndex(page => 
+            const sourcePageIndex = pages.findIndex(page =>
                 page.elements.some(el => el.id === draggedElement.id)
             );
 
@@ -1008,7 +1012,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             // Batch update for better performance
             setPages(prevPages => {
                 const newPages = [...prevPages];
-                
+
                 // Remove element from source page
                 if (sourcePageIndex !== targetPageIndex) {
                     newPages[sourcePageIndex] = {
@@ -1016,17 +1020,17 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         elements: newPages[sourcePageIndex].elements.filter(el => el.id !== draggedElement.id)
                     };
                 }
-                
+
                 // Add/update element on target page
                 newPages[targetPageIndex] = {
                     ...newPages[targetPageIndex],
-                    elements: sourcePageIndex === targetPageIndex 
-                        ? newPages[targetPageIndex].elements.map(el => 
+                    elements: sourcePageIndex === targetPageIndex
+                        ? newPages[targetPageIndex].elements.map(el =>
                             el.id === draggedElement.id ? updatedElement : el
-                          )
+                        )
                         : [...newPages[targetPageIndex].elements, updatedElement]
                 };
-                
+
                 return newPages;
             });
 
@@ -1034,7 +1038,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             setSelectedPageIndex(targetPageIndex);
             setSelectedElement(updatedElement);
             setDraggedElement(null);
-            
+
         } catch (error) {
             console.error('Error parsing drag data:', error);
             setDraggedElement(null);
@@ -1113,8 +1117,8 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
     // Change background for selected page or all pages based on scope
     const changeBackground = useCallback((color: string): void => {
-        const targetPages = backgroundScope === 'all' ? 
-            Array.from({ length: pages.length }, (_, i) => i) : 
+        const targetPages = backgroundScope === 'all' ?
+            Array.from({ length: pages.length }, (_, i) => i) :
             [selectedPageIndex];
 
         setPages(prevPages => prevPages.map((page, index) => {
@@ -1137,7 +1141,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             // Here you could save the editor pages to your backend
             // For now, we'll just save to localStorage and show success
             localStorage.setItem(`photobook-${paramsId}`, JSON.stringify(currentPages));
-            
+
             toast.success("Photobook saved successfully!", {
                 position: "bottom-right",
                 autoClose: 2000,
@@ -1166,13 +1170,13 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             if (exportOptions.format === 'json') {
                 const dataStr = JSON.stringify(currentPages, null, 2);
                 const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-                
+
                 const exportFileDefaultName = `${albumData?.bookName || 'photobook'}-${Date.now()}.json`;
                 const linkElement = document.createElement('a');
                 linkElement.setAttribute('href', dataUri);
                 linkElement.setAttribute('download', exportFileDefaultName);
                 linkElement.click();
-                
+
                 toast.success("Photobook exported successfully!", {
                     position: "bottom-right",
                     autoClose: 2000,
@@ -1196,11 +1200,11 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>, pageIndex: number) => {
         // Only handle canvas clicks when not drawing and clicking on empty space
         if (tool === 'draw' || e.target !== e.currentTarget) return;
-        
+
         const rect = e.currentTarget.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        
+
         // Double-click to add text at cursor position
         if (e.detail === 2) {
             setSelectedPageIndex(pageIndex);
@@ -1237,6 +1241,400 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
     }, [showImagePanel, recentImages.length, loadingRecentImages, fetchRecentImages]);
 
+    // Show caption button when image is selected
+    useEffect(() => {
+        if (selectedElement && selectedElement.type === 'image') {
+            setShowCaptionButton(true);
+        } else {
+            setShowCaptionButton(false);
+            setGeneratedCaption('');
+        }
+    }, [selectedElement]);
+
+    // Generate AI caption for selected image
+    const generateAICaption = useCallback(async () => {
+        if (!selectedElement || selectedElement.type !== 'image') {
+            toast.error('Please select an image first');
+            return;
+        }
+
+        setIsGeneratingCaption(true);
+        try {
+            const imageElement = selectedElement as ImageElement;
+
+            // Convert image to blob for API call
+            const response = await fetch(imageElement.src);
+            const blob = await response.blob();
+
+            // Create FormData for the caption API
+            const formData = new FormData();
+            formData.append('file', blob, 'image.jpg');
+
+            // Call the caption API
+            const captionResponse = await fetch('/api/caption', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (captionResponse.ok) {
+                const data = await captionResponse.json();
+                const caption = data.caption || 'A beautiful moment captured in time.';
+
+                setGeneratedCaption(caption);
+
+                // Automatically add the caption as text below the image
+                const captionPosition = {
+                    x: imageElement.x,
+                    y: imageElement.y + imageElement.height + 10
+                };
+
+                const captionElement = createTextElement(
+                    captionPosition,
+                    caption,
+                    {
+                        width: imageElement.width,
+                        height: 30,
+                        fontSize: 14,
+                        color: '#333333',
+                        rotation: 0,
+                        fontFamily: 'Arial',
+                        textAlign: 'center'
+                    }
+                );
+
+                const validation = validateElement(captionElement);
+                if (validation.isValid) {
+                    setPages(prevPages => prevPages.map((page, index) =>
+                        index === selectedPageIndex
+                            ? { ...page, elements: [...page.elements, captionElement] }
+                            : page
+                    ));
+                }
+            } else {
+                // Fallback caption if API fails
+                const fallbackCaption = 'A wonderful memory captured forever.';
+                setGeneratedCaption(fallbackCaption);
+
+                // Still add the fallback caption to the page
+                const captionPosition = {
+                    x: (selectedElement as ImageElement).x,
+                    y: (selectedElement as ImageElement).y + (selectedElement as ImageElement).height + 10
+                };
+
+                const captionElement = createTextElement(
+                    captionPosition,
+                    fallbackCaption,
+                    {
+                        width: (selectedElement as ImageElement).width,
+                        height: 30,
+                        fontSize: 14,
+                        color: '#333333',
+                        rotation: 0,
+                        fontFamily: 'Arial',
+                        textAlign: 'center'
+                    }
+                );
+
+                const validation = validateElement(captionElement);
+                if (validation.isValid) {
+                    setPages(prevPages => prevPages.map((page, index) =>
+                        index === selectedPageIndex
+                            ? { ...page, elements: [...page.elements, captionElement] }
+                            : page
+                    ));
+                }
+
+                toast.info('Using sample caption - AI service may not be available');
+            }
+        } catch (error) {
+            console.error('Error generating AI caption:', error);
+
+            // Fallback caption on error
+            const fallbackCaption = 'A precious moment in time.';
+            setGeneratedCaption(fallbackCaption);
+
+            const captionPosition = {
+                x: (selectedElement as ImageElement).x,
+                y: (selectedElement as ImageElement).y + (selectedElement as ImageElement).height + 10
+            };
+
+            const captionElement = createTextElement(
+                captionPosition,
+                fallbackCaption,
+                {
+                    width: (selectedElement as ImageElement).width,
+                    height: 30,
+                    fontSize: 14,
+                    color: '#333333',
+                    rotation: 0,
+                    fontFamily: 'Arial',
+                    textAlign: 'center'
+                }
+            );
+
+            const validation = validateElement(captionElement);
+            if (validation.isValid) {
+                setPages(prevPages => prevPages.map((page, index) =>
+                    index === selectedPageIndex
+                        ? { ...page, elements: [...page.elements, captionElement] }
+                        : page
+                ));
+            }
+
+            toast.info('Added sample caption - AI service not available');
+        } finally {
+            setIsGeneratingCaption(false);
+        }
+    }, [selectedElement, selectedPageIndex, createTextElement, validateElement]);
+
+    // Generate AI layout for current page - Auto arrange existing images
+    const generateAILayout = useCallback(async () => {
+        setIsGeneratingLayout(true);
+        try {
+            // Analyze current page context
+            const currentPage = pages[selectedPageIndex];
+            const imageElements = currentPage.elements.filter(el => el.type === 'image') as ImageElement[];
+            const textElements = currentPage.elements.filter(el => el.type === 'text');
+            const otherElements = currentPage.elements.filter(el => el.type !== 'image' && el.type !== 'text');
+
+            if (imageElements.length === 0) {
+                toast.info('No images found on this page to arrange');
+                setShowLayoutButton(false);
+                return;
+            }
+
+            // Generate different layout patterns based on number of images
+            const arrangedImages = arrangeImagesInLayout(imageElements, imageElements.length);
+
+            // Update the page with rearranged images
+            setPages(prevPages => prevPages.map((page, index) =>
+                index === selectedPageIndex
+                    ? {
+                        ...page,
+                        elements: [...arrangedImages, ...textElements, ...otherElements]
+                    }
+                    : page
+            ));
+
+        } catch (error) {
+            console.error('Error generating AI layout:', error);
+        } finally {
+            setIsGeneratingLayout(false);
+            setShowLayoutButton(false);
+        }
+    }, [selectedPageIndex, pages]);
+
+    // Arrange images in different layout patterns with multiple variations
+    const arrangeImagesInLayout = useCallback((images: ImageElement[], count: number): ImageElement[] => {
+        const layoutVariations = {
+            1: [
+                [{ x: 200, y: 150, width: 200, height: 150 }], // Centered
+                [{ x: 100, y: 100, width: 300, height: 200 }], // Large centered
+                [{ x: 250, y: 80, width: 150, height: 240 }]   // Portrait centered
+            ],
+            2: [
+                // Variation 1: Side by side
+                [
+                    { x: 80, y: 150, width: 160, height: 120 },
+                    { x: 260, y: 150, width: 160, height: 120 }
+                ],
+                // Variation 2: Top and bottom
+                [
+                    { x: 200, y: 80, width: 200, height: 120 },
+                    { x: 200, y: 220, width: 200, height: 120 }
+                ],
+                // Variation 3: Diagonal
+                [
+                    { x: 50, y: 80, width: 180, height: 135 },
+                    { x: 270, y: 185, width: 180, height: 135 }
+                ],
+                // Variation 4: Large and small
+                [
+                    { x: 50, y: 50, width: 250, height: 180 },
+                    { x: 320, y: 250, width: 130, height: 100 }
+                ]
+            ],
+            3: [
+                // Variation 1: Triangle
+                [
+                    { x: 200, y: 50, width: 180, height: 120 },
+                    { x: 80, y: 200, width: 160, height: 120 },
+                    { x: 260, y: 200, width: 160, height: 120 }
+                ],
+                // Variation 2: Vertical stack
+                [
+                    { x: 200, y: 50, width: 200, height: 100 },
+                    { x: 200, y: 160, width: 200, height: 100 },
+                    { x: 200, y: 270, width: 200, height: 100 }
+                ],
+                // Variation 3: L-shape
+                [
+                    { x: 50, y: 50, width: 200, height: 150 },
+                    { x: 270, y: 50, width: 130, height: 100 },
+                    { x: 270, y: 170, width: 130, height: 100 }
+                ]
+            ],
+            4: [
+                // Variation 1: Grid 2x2
+                [
+                    { x: 80, y: 80, width: 160, height: 120 },
+                    { x: 260, y: 80, width: 160, height: 120 },
+                    { x: 80, y: 220, width: 160, height: 120 },
+                    { x: 260, y: 220, width: 160, height: 120 }
+                ],
+                // Variation 2: One large, three small
+                [
+                    { x: 50, y: 50, width: 250, height: 180 },
+                    { x: 320, y: 50, width: 130, height: 85 },
+                    { x: 320, y: 145, width: 130, height: 85 },
+                    { x: 320, y: 240, width: 130, height: 85 }
+                ],
+                // Variation 3: Cross pattern
+                [
+                    { x: 200, y: 30, width: 150, height: 100 },
+                    { x: 50, y: 140, width: 150, height: 100 },
+                    { x: 200, y: 140, width: 150, height: 100 },
+                    { x: 350, y: 140, width: 150, height: 100 }
+                ],
+                // Variation 4: Horizontal line
+                [
+                    { x: 30, y: 150, width: 100, height: 100 },
+                    { x: 140, y: 150, width: 100, height: 100 },
+                    { x: 250, y: 150, width: 100, height: 100 },
+                    { x: 360, y: 150, width: 100, height: 100 }
+                ]
+            ],
+            5: [
+                // Variation 1: Cross pattern
+                [
+                    { x: 200, y: 30, width: 160, height: 100 },
+                    { x: 50, y: 150, width: 120, height: 90 },
+                    { x: 190, y: 150, width: 120, height: 90 },
+                    { x: 330, y: 150, width: 120, height: 90 },
+                    { x: 200, y: 260, width: 160, height: 100 }
+                ],
+                // Variation 2: Pentagon
+                [
+                    { x: 200, y: 30, width: 140, height: 90 },
+                    { x: 80, y: 130, width: 120, height: 80 },
+                    { x: 300, y: 130, width: 120, height: 80 },
+                    { x: 120, y: 230, width: 120, height: 80 },
+                    { x: 260, y: 230, width: 120, height: 80 }
+                ],
+                // Variation 3: Flower pattern
+                [
+                    { x: 200, y: 150, width: 140, height: 100 }, // Center
+                    { x: 200, y: 50, width: 100, height: 80 },   // Top
+                    { x: 350, y: 150, width: 100, height: 80 },  // Right
+                    { x: 200, y: 270, width: 100, height: 80 },  // Bottom
+                    { x: 50, y: 150, width: 100, height: 80 }    // Left
+                ]
+            ],
+            6: [
+                // Variation 1: Grid 3x2
+                [
+                    { x: 50, y: 50, width: 120, height: 90 },
+                    { x: 190, y: 50, width: 120, height: 90 },
+                    { x: 330, y: 50, width: 120, height: 90 },
+                    { x: 50, y: 160, width: 120, height: 90 },
+                    { x: 190, y: 160, width: 120, height: 90 },
+                    { x: 330, y: 160, width: 120, height: 90 }
+                ],
+                // Variation 2: Grid 2x3
+                [
+                    { x: 100, y: 40, width: 140, height: 90 },
+                    { x: 260, y: 40, width: 140, height: 90 },
+                    { x: 100, y: 140, width: 140, height: 90 },
+                    { x: 260, y: 140, width: 140, height: 90 },
+                    { x: 100, y: 240, width: 140, height: 90 },
+                    { x: 260, y: 240, width: 140, height: 90 }
+                ],
+                // Variation 3: Hexagon pattern
+                [
+                    { x: 150, y: 30, width: 100, height: 80 },   // Top center
+                    { x: 270, y: 30, width: 100, height: 80 },   // Top right
+                    { x: 320, y: 120, width: 100, height: 80 },  // Middle right
+                    { x: 270, y: 210, width: 100, height: 80 },  // Bottom right
+                    { x: 150, y: 210, width: 100, height: 80 },  // Bottom center
+                    { x: 80, y: 120, width: 100, height: 80 }    // Middle left
+                ],
+                // Variation 4: Pyramid
+                [
+                    { x: 200, y: 30, width: 120, height: 80 },   // Top
+                    { x: 120, y: 120, width: 120, height: 80 },  // Middle left
+                    { x: 260, y: 120, width: 120, height: 80 },  // Middle right
+                    { x: 80, y: 210, width: 100, height: 80 },   // Bottom left
+                    { x: 200, y: 210, width: 100, height: 80 },  // Bottom center
+                    { x: 320, y: 210, width: 100, height: 80 }   // Bottom right
+                ]
+            ]
+        };
+
+        // Get available variations for the image count
+        const availableLayouts = layoutVariations[Math.min(count, 6) as keyof typeof layoutVariations] || [layoutVariations[6][0]];
+
+        // Cycle through layout variations
+        const layoutIndex = currentLayoutIndex % availableLayouts.length;
+        const selectedLayout = availableLayouts[layoutIndex];
+
+        // Update layout index for next time
+        setCurrentLayoutIndex(prev => prev + 1);
+
+        // If more than 6 images, create a grid layout
+        if (count > 6) {
+            const cols = Math.ceil(Math.sqrt(count));
+            const rows = Math.ceil(count / cols);
+            const imageWidth = Math.floor((DEFAULT_PAGE_SIZE.width - 60) / cols);
+            const imageHeight = Math.floor((DEFAULT_PAGE_SIZE.height - 60) / rows);
+
+            const gridLayout: Array<{ x: number; y: number; width: number; height: number }> = [];
+            for (let i = 0; i < count; i++) {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                gridLayout.push({
+                    x: 30 + col * (imageWidth + 10),
+                    y: 30 + row * (imageHeight + 10),
+                    width: imageWidth,
+                    height: imageHeight
+                });
+            }
+
+            return images.map((image, index) => ({
+                ...image,
+                x: gridLayout[index]?.x || image.x,
+                y: gridLayout[index]?.y || image.y,
+                width: gridLayout[index]?.width || image.width,
+                height: gridLayout[index]?.height || image.height
+            }));
+        }
+
+        // Apply selected layout pattern
+        return images.map((image, index) => ({
+            ...image,
+            x: selectedLayout[index]?.x || image.x,
+            y: selectedLayout[index]?.y || image.y,
+            width: selectedLayout[index]?.width || image.width,
+            height: selectedLayout[index]?.height || image.height
+        }));
+    }, [currentLayoutIndex]);
+
+    // Get layout name for user feedback
+    const getLayoutName = useCallback((count: number): string => {
+        const layoutVariationNames = {
+            1: ['Single Centered', 'Large Centered', 'Portrait Centered'],
+            2: ['Side by Side', 'Top & Bottom', 'Diagonal', 'Large & Small'],
+            3: ['Triangle', 'Vertical Stack', 'L-Shape'],
+            4: ['Grid 2x2', 'One Large + Three Small', 'Cross Pattern', 'Horizontal Line'],
+            5: ['Cross Pattern', 'Pentagon', 'Flower Pattern'],
+            6: ['Grid 3x2', 'Grid 2x3', 'Hexagon Pattern', 'Pyramid']
+        };
+
+        const variations = layoutVariationNames[Math.min(count, 6) as keyof typeof layoutVariationNames] || ['Grid Layout'];
+        const variationIndex = (currentLayoutIndex - 1) % variations.length;
+
+        return variations[variationIndex] || `Grid ${Math.ceil(Math.sqrt(count))}x${Math.ceil(count / Math.ceil(Math.sqrt(count)))}`;
+    }, [currentLayoutIndex]);
+
     // Get current spread pages (left and right)
     const leftPageIndex = currentSpread * 2;
     const rightPageIndex = currentSpread * 2 + 1;
@@ -1254,18 +1652,18 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 setTextInputPosition({ x: 150, y: 150 });
                 setTextInputValue('');
                 setShowTextInput(true);
-                
+
                 // Focus the input after a brief delay
                 setTimeout(() => {
                     textInputRef.current?.focus();
                 }, 100);
             }
-            
+
             // Escape to cancel text input
             if (e.key === 'Escape' && showTextInput) {
                 handleTextInputCancel();
             }
-            
+
             // Enter to submit text input
             if (e.key === 'Enter' && showTextInput) {
                 e.preventDefault();
@@ -1312,7 +1710,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                     <p className="text-sm text-red-600 mt-2">
                         {error}
                     </p>
-                    <Link 
+                    <Link
                         href="/me/dashboard"
                         className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                     >
@@ -1328,7 +1726,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             {/* Header */}
             <div className="bg-white shadow-sm border-b flex items-center justify-between px-6 py-3">
                 <div className="flex items-center gap-4">
-                    <Link 
+                    <Link
                         href="/me/dashboard"
                         className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
                     >
@@ -1344,7 +1742,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         </p>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setShowPreviewModal(true)}
@@ -1353,15 +1751,14 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         <Eye className="w-4 h-4" />
                         Preview
                     </button>
-                    
+
                     <button
                         onClick={() => handleEditorSave()}
                         disabled={isSaving}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                            isSaving
-                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                : "bg-blue-600 text-white hover:bg-blue-700"
-                        }`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isSaving
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                            }`}
                     >
                         {isSaving ? (
                             <>
@@ -1375,7 +1772,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             </>
                         )}
                     </button>
-                    
+
                     <button
                         onClick={() => handleEditorExport()}
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -1517,7 +1914,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
                         <div className="space-y-4">
                             {/* Enhanced Upload from Computer */}
-                            <div 
+                            <div
                                 className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
                                 onDragOver={(e) => {
                                     e.preventDefault();
@@ -1530,10 +1927,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                 onDrop={(e) => {
                                     e.preventDefault();
                                     e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
-                                    
+
                                     const files = Array.from(e.dataTransfer.files);
                                     const imageFile = files.find(file => file.type.startsWith('image/'));
-                                    
+
                                     if (imageFile) {
                                         const reader = new FileReader();
                                         reader.onload = (event) => {
@@ -1589,7 +1986,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             {/* Recent Projects Section */}
                             <div className="border-t pt-4">
                                 <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Projects</h4>
-                                
+
                                 {loadingRecentImages ? (
                                     <div className="flex items-center justify-center py-8">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1791,362 +2188,47 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             </button>
                         </div>
 
-                        {/* Mode Toggle */}
-                        <div className="mb-4">
-                            <div className="flex bg-gray-100 rounded-lg p-1">
+                        {/* Manual Text Editor */}
+                        <div className="space-y-4">
+                            {/* Text Input */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Enter your text:
+                                </label>
+                                <textarea
+                                    ref={textAreaRef}
+                                    value={textInputValue}
+                                    onChange={(e) => setTextInputValue(e.target.value)}
+                                    placeholder="Type your text here..."
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    rows={3}
+                                />
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="space-y-2 pt-4 border-t">
                                 <button
-                                    onClick={() => setShowAIContentPanel(false)}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${
-                                        !showAIContentPanel 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                    onClick={saveTextStyle}
+                                    className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
                                 >
-                                    Manual Editor
+                                    Save Current Style
                                 </button>
                                 <button
-                                    onClick={() => setShowAIContentPanel(true)}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${
-                                        showAIContentPanel 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                    onClick={() => {
+                                        if (textInputValue.trim()) {
+                                            createAdvancedTextElement(textInputValue);
+                                        }
+                                    }}
+                                    disabled={!textInputValue.trim()}
+                                    className={`w-full px-4 py-2 rounded-lg transition-colors text-sm ${textInputValue.trim()
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        }`}
                                 >
-                                    AI Assistant
+                                    Add Text to Page
                                 </button>
                             </div>
                         </div>
-
-                        {!showAIContentPanel ? (
-                            /* Manual Text Editor */
-                            <div className="space-y-4">
-                                {/* Text Input */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Enter your text:
-                                    </label>
-                                    <textarea
-                                        ref={textAreaRef}
-                                        value={textInputValue}
-                                        onChange={(e) => setTextInputValue(e.target.value)}
-                                        placeholder="Type your text here..."
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                        rows={3}
-                                    />
-                                </div>
-
-                                {/* Font Controls */}
-                                <div className="space-y-3">
-                                    <h4 className="text-sm font-medium text-gray-700">Typography</h4>
-                                    
-                                    {/* Font Family & Size */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <select
-                                            value={textStyles.fontFamily}
-                                            onChange={(e) => setTextStyles(prev => ({ ...prev, fontFamily: e.target.value }))}
-                                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                                        >
-                                            <option value="Arial">Arial</option>
-                                            <option value="Georgia">Georgia</option>
-                                            <option value="Times New Roman">Times</option>
-                                            <option value="Helvetica">Helvetica</option>
-                                            <option value="Verdana">Verdana</option>
-                                            <option value="Comic Sans MS">Comic Sans</option>
-                                        </select>
-                                        <input
-                                            type="number"
-                                            value={textStyles.fontSize}
-                                            onChange={(e) => setTextStyles(prev => ({ ...prev, fontSize: parseInt(e.target.value) || 16 }))}
-                                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                                            min="8"
-                                            max="72"
-                                        />
-                                    </div>
-
-                                    {/* Font Weight & Decoration */}
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setTextStyles(prev => ({ 
-                                                ...prev, 
-                                                fontWeight: prev.fontWeight === 'bold' ? 'normal' : 'bold' 
-                                            }))}
-                                            className={`px-3 py-1 rounded text-sm font-bold transition-colors ${
-                                                textStyles.fontWeight === 'bold' 
-                                                    ? 'bg-blue-100 text-blue-600' 
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            B
-                                        </button>
-                                        <button
-                                            onClick={() => setTextStyles(prev => ({ 
-                                                ...prev, 
-                                                textDecoration: prev.textDecoration === 'underline' ? 'none' : 'underline' 
-                                            }))}
-                                            className={`px-3 py-1 rounded text-sm italic transition-colors ${
-                                                textStyles.textDecoration === 'underline' 
-                                                    ? 'bg-blue-100 text-blue-600' 
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            U
-                                        </button>
-                                    </div>
-
-                                    {/* Text Alignment */}
-                                    <div className="flex gap-1">
-                                        {(['left', 'center', 'right', 'justify'] as const).map((align) => (
-                                            <button
-                                                key={align}
-                                                onClick={() => setTextStyles(prev => ({ ...prev, textAlign: align }))}
-                                                className={`px-2 py-1 rounded text-sm transition-colors ${
-                                                    textStyles.textAlign === align 
-                                                        ? 'bg-blue-100 text-blue-600' 
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                }`}
-                                            >
-                                                {align === 'left' && '⬅'}
-                                                {align === 'center' && '↔'}
-                                                {align === 'right' && '➡'}
-                                                {align === 'justify' && '⬌'}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* Color Picker */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Text Color
-                                        </label>
-                                        <input
-                                            type="color"
-                                            value={textStyles.color}
-                                            onChange={(e) => setTextStyles(prev => ({ ...prev, color: e.target.value }))}
-                                            className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-                                        />
-                                    </div>
-
-                                    {/* Advanced Typography */}
-                                    <div className="space-y-2">
-                                        <div>
-                                            <label className="block text-xs text-gray-600 mb-1">
-                                                Line Height: {textStyles.lineHeight}
-                                            </label>
-                                            <input
-                                                type="range"
-                                                min="0.8"
-                                                max="2.0"
-                                                step="0.1"
-                                                value={textStyles.lineHeight}
-                                                onChange={(e) => setTextStyles(prev => ({ ...prev, lineHeight: parseFloat(e.target.value) }))}
-                                                className="w-full"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-600 mb-1">
-                                                Letter Spacing: {textStyles.letterSpacing}px
-                                            </label>
-                                            <input
-                                                type="range"
-                                                min="-2"
-                                                max="5"
-                                                step="0.5"
-                                                value={textStyles.letterSpacing}
-                                                onChange={(e) => setTextStyles(prev => ({ ...prev, letterSpacing: parseFloat(e.target.value) }))}
-                                                className="w-full"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Style Presets */}
-                                {savedTextStyles.length > 0 && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Saved Styles</h4>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {savedTextStyles.map((style) => (
-                                                <button
-                                                    key={style.id}
-                                                    onClick={() => applyTextStyle(style)}
-                                                    className="text-left p-2 border border-gray-200 rounded hover:border-blue-300 transition-colors"
-                                                >
-                                                    <div className="text-sm font-medium">{style.name}</div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {style.fontFamily} • {style.fontSize}px
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Action Buttons */}
-                                <div className="space-y-2 pt-4 border-t">
-                                    <button
-                                        onClick={saveTextStyle}
-                                        className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                                    >
-                                        Save Current Style
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (textInputValue.trim()) {
-                                                createAdvancedTextElement(textInputValue);
-                                            }
-                                        }}
-                                        disabled={!textInputValue.trim()}
-                                        className={`w-full px-4 py-2 rounded-lg transition-colors text-sm ${
-                                            textInputValue.trim()
-                                                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        }`}
-                                    >
-                                        Add Text to Page
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            /* AI Content Generator */
-                            <div className="space-y-4">
-                                {/* Content Type Selection */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Content Type
-                                    </label>
-                                    <select
-                                        value={aiContentType}
-                                        onChange={(e) => setAiContentType(e.target.value as any)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        <option value="caption">Caption</option>
-                                        <option value="headline">Headline</option>
-                                        <option value="paragraph">Paragraph</option>
-                                    </select>
-                                </div>
-
-                                {/* Tone Selection */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Tone
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {(['casual', 'sentimental', 'humorous', 'poetic', 'formal'] as const).map((tone) => (
-                                            <button
-                                                key={tone}
-                                                onClick={() => setAiTone(tone)}
-                                                className={`px-3 py-2 rounded-md text-sm transition-colors capitalize ${
-                                                    aiTone === tone 
-                                                        ? 'bg-blue-100 text-blue-600 border border-blue-300' 
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
-                                                }`}
-                                            >
-                                                {tone}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Style Selection */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Style
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {(['single', 'paragraph', 'question', 'quote'] as const).map((style) => (
-                                            <button
-                                                key={style}
-                                                onClick={() => setAiStyle(style)}
-                                                className={`px-3 py-2 rounded-md text-sm transition-colors capitalize ${
-                                                    aiStyle === style 
-                                                        ? 'bg-blue-100 text-blue-600 border border-blue-300' 
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
-                                                }`}
-                                            >
-                                                {style === 'single' ? 'Single Line' : style}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Generate Button */}
-                                <button
-                                    onClick={generateAIContent}
-                                    disabled={isGeneratingAI}
-                                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                                        isGeneratingAI
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                                    }`}
-                                >
-                                    {isGeneratingAI ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                            Generate Content
-                                        </>
-                                    )}
-                                </button>
-
-                                {/* AI Suggestions */}
-                                {aiSuggestions.length > 0 && (
-                                    <div>
-                                        <h4 className="text-sm font-medium text-gray-700 mb-2">AI Suggestions</h4>
-                                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                                            {aiSuggestions.map((suggestion, index) => (
-                                                <div
-                                                    key={index}
-                                                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                                                        selectedSuggestion === suggestion
-                                                            ? 'border-blue-300 bg-blue-50'
-                                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                                    }`}
-                                                    onClick={() => setSelectedSuggestion(suggestion)}
-                                                >
-                                                    <p className="text-sm text-gray-800">{suggestion}</p>
-                                                    <div className="flex gap-2 mt-2">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                createAdvancedTextElement(suggestion);
-                                                            }}
-                                                            className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                                                        >
-                                                            Use This
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                generateVariations(suggestion);
-                                                            }}
-                                                            className="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 transition-colors"
-                                                        >
-                                                            Variations
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Context Info */}
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                    <p className="text-sm text-blue-800 mb-2">💡 Context Analysis:</p>
-                                    <ul className="text-xs text-blue-700 space-y-1">
-                                        <li>• Page: {selectedPageIndex + 1} of {pages.length}</li>
-                                        <li>• Images on page: {pages[selectedPageIndex]?.elements.filter(el => el.type === 'image').length || 0}</li>
-                                        <li>• Album: {albumData?.bookName || 'Untitled'}</li>
-                                        <li>• AI will consider this context when generating content</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
 
@@ -2170,21 +2252,19 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             <div className="flex bg-gray-100 rounded-lg p-1">
                                 <button
                                     onClick={() => setBackgroundScope('current')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${
-                                        backgroundScope === 'current' 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundScope === 'current'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
                                 >
                                     Current Page
                                 </button>
                                 <button
                                     onClick={() => setBackgroundScope('all')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${
-                                        backgroundScope === 'all' 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundScope === 'all'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
                                 >
                                     All Pages
                                 </button>
@@ -2196,31 +2276,28 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             <div className="flex bg-gray-100 rounded-lg p-1">
                                 <button
                                     onClick={() => setBackgroundMode('color')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${
-                                        backgroundMode === 'color' 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundMode === 'color'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
                                 >
                                     Colors
                                 </button>
                                 <button
                                     onClick={() => setBackgroundMode('library')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${
-                                        backgroundMode === 'library' 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundMode === 'library'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
                                 >
                                     Library
                                 </button>
                                 <button
                                     onClick={() => setBackgroundMode('ai')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${
-                                        backgroundMode === 'ai' 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
+                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundMode === 'ai'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
                                 >
                                     AI-Generated
                                 </button>
@@ -2323,11 +2400,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                         setSelectedLibraryBackground(bg.id);
                                                         applyBackgroundImage(bg.url);
                                                     }}
-                                                    className={`aspect-video bg-gray-200 rounded-lg border-2 transition-colors overflow-hidden group relative ${
-                                                        selectedLibraryBackground === bg.id 
-                                                            ? 'border-blue-500' 
-                                                            : 'border-gray-200 hover:border-blue-300'
-                                                    }`}
+                                                    className={`aspect-video bg-gray-200 rounded-lg border-2 transition-colors overflow-hidden group relative ${selectedLibraryBackground === bg.id
+                                                        ? 'border-blue-500'
+                                                        : 'border-gray-200 hover:border-blue-300'
+                                                        }`}
                                                 >
                                                     <img
                                                         src={bg.url}
@@ -2393,11 +2469,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         <button
                                             onClick={generateAIBackground}
                                             disabled={isGeneratingBackground || !aiPrompt.trim()}
-                                            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                                                isGeneratingBackground || !aiPrompt.trim()
-                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                                            }`}
+                                            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${isGeneratingBackground || !aiPrompt.trim()
+                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                }`}
                                         >
                                             {isGeneratingBackground ? (
                                                 <>
@@ -2448,54 +2523,26 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 {/* Canvas Area */}
                 <div className='flex-1 flex justify-center items-start pt-3 overflow-auto'>
                     <div className="flex flex-col items-center">
-                        {/* View Mode Toggle and Navigation */}
+                        {/* Navigation */}
                         <div className="flex items-center gap-4 mb-6">
-                            {/* View Mode Toggle */}
-                            <div className="flex bg-gray-200 rounded-lg p-1">
-                                <button
-                                    onClick={() => setViewMode('spread')}
-                                    className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                                        viewMode === 'spread' 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Spread View
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('scroll')}
-                                    className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                                        viewMode === 'scroll' 
-                                            ? 'bg-white text-gray-900 shadow-sm' 
-                                            : 'text-gray-600 hover:text-gray-900'
-                                    }`}
-                                >
-                                    Scroll View
-                                </button>
-                            </div>
-
-                            {/* Spread Navigation - Only show in spread view */}
-                            {viewMode === 'spread' && (
-                                <>
-                                    <button
-                                        onClick={() => setCurrentSpread(Math.max(0, currentSpread - 1))}
-                                        disabled={currentSpread === 0}
-                                        className="p-2 rounded-lg bg-white shadow hover:shadow-md transition-shadow disabled:opacity-50"
-                                    >
-                                        <ChevronLeft className="w-5 h-5" />
-                                    </button>
-                                    <span className="text-sm text-gray-600">
-                                        Pages {currentSpread + 1} of {totalSpreads}
-                                    </span>
-                                    <button
-                                        onClick={() => setCurrentSpread(Math.min(totalSpreads - 1, currentSpread + 1))}
-                                        disabled={currentSpread === totalSpreads - 1}
-                                        className="p-2 rounded-lg bg-white shadow hover:shadow-md transition-shadow disabled:opacity-50"
-                                    >
-                                        <ChevronRight className="w-5 h-5" />
-                                    </button>
-                                </>
-                            )}
+                            {/* Spread Navigation */}
+                            <button
+                                onClick={() => setCurrentSpread(Math.max(0, currentSpread - 1))}
+                                disabled={currentSpread === 0}
+                                className="p-2 rounded-lg bg-white shadow hover:shadow-md transition-shadow disabled:opacity-50"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <span className="text-sm text-gray-600">
+                                Pages {currentSpread + 1} of {totalSpreads}
+                            </span>
+                            <button
+                                onClick={() => setCurrentSpread(Math.min(totalSpreads - 1, currentSpread + 1))}
+                                disabled={currentSpread === totalSpreads - 1}
+                                className="p-2 rounded-lg bg-white shadow hover:shadow-md transition-shadow disabled:opacity-50"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
 
                             <button
                                 onClick={addPage}
@@ -2506,385 +2553,283 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             </button>
                         </div>
 
-                        {/* Canvas Content - Conditional based on view mode */}
-                        {viewMode === 'spread' ? (
-                            /* Spread View - Left and Right Pages */
-                            <div className="flex gap-4">
-                                {/* Left Page */}
-                                {leftPage && (
-                                    <div
-                                        className={`relative border-2 shadow-lg ${tool === 'draw' ? 'cursor-crosshair' : 'cursor-pointer'} ${selectedPageIndex === leftPageIndex ? 'border-blue-500' : 'border-gray-200'
-                                            }`}
-                                        style={{
-                                            width: `${leftPage.width}px`,
-                                            height: `${leftPage.height}px`,
-                                            backgroundColor: leftPage.background
-                                        }}
-                                        onDragOver={handleDragOver}
-                                        onDrop={(e) => {
+                        {/* Canvas Content - Spread View */}
+                        <div className="flex gap-4">
+                            {/* Left Page */}
+                            {leftPage && (
+                                <div
+                                    className={`relative border-2 shadow-lg ${tool === 'draw' ? 'cursor-crosshair' : 'cursor-pointer'} ${selectedPageIndex === leftPageIndex ? 'border-blue-500' : 'border-gray-200'
+                                        }`}
+                                    style={{
+                                        width: `${leftPage.width}px`,
+                                        height: `${leftPage.height}px`,
+                                        backgroundColor: leftPage.background
+                                    }}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => {
+                                        setSelectedPageIndex(leftPageIndex);
+                                        handleDrop(e, leftPageIndex);
+                                    }}
+                                    onMouseDown={(e) => handleMouseDown(e, leftPageIndex)}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onClick={(e) => {
+                                        if (e.target === e.currentTarget) {
                                             setSelectedPageIndex(leftPageIndex);
-                                            handleDrop(e, leftPageIndex);
-                                        }}
-                                        onMouseDown={(e) => handleMouseDown(e, leftPageIndex)}
-                                        onMouseMove={handleMouseMove}
-                                        onMouseUp={handleMouseUp}
-                                        onClick={(e) => {
-                                            if (e.target === e.currentTarget) {
-                                                setSelectedPageIndex(leftPageIndex);
-                                                setSelectedElement(null);
-                                            }
-                                        }}
-                                    >
-                                        <div className="absolute top-2 left-2 bg-gray-800 text-white px-2 py-1 rounded text-xs">
-                                            {leftPageIndex + 1}
-                                        </div>
+                                            setSelectedElement(null);
 
-                                        {leftPage.elements.map((element: Element) => (
-                                            <div
-                                                key={element.id}
-                                                draggable
-                                                onDragStart={(e) => {
-                                                    setSelectedPageIndex(leftPageIndex);
-                                                    handleDragStart(e, element);
-                                                }}
-                                                onDragEnd={(e) => {
-                                                    // Reset opacity after drag
-                                                    e.currentTarget.style.opacity = '1';
-                                                }}
-                                                onClick={(e: React.MouseEvent) => {
-                                                    e.stopPropagation();
-                                                    setSelectedPageIndex(leftPageIndex);
-                                                    setSelectedElement(element);
-                                                }}
-                                                className={`absolute cursor-move transition-all duration-150 ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''
-                                                    }`}
-                                                style={{
-                                                    left: element.x,
-                                                    top: element.y,
-                                                    width: element.width,
-                                                    height: element.height,
-                                                    transform: `rotate(${element.rotation || 0}deg)`,
-                                                    willChange: 'transform'
-                                                }}
-                                            >
-                                                {element.type === 'image' ? (
-                                                    <img
-                                                        src={(element as ImageElement).src}
-                                                        alt={(element as ImageElement).alt || ""}
-                                                        className="w-full h-full object-cover border border-gray-300"
-                                                    />
-                                                ) : element.type === 'drawing' ? (
-                                                    <svg
-                                                        width="100%"
-                                                        height="100%"
-                                                        viewBox={`0 0 ${element.width} ${element.height}`}
-                                                        className="w-full h-full"
-                                                    >
-                                                        {(element as DrawingElement).paths.map((path) => (
-                                                            <path
-                                                                key={path.id}
-                                                                d={`M ${path.points.map(p => `${p.x} ${p.y}`).join(' L ')}`}
-                                                                stroke={path.strokeColor}
-                                                                strokeWidth={path.strokeWidth}
-                                                                fill="none"
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                opacity={path.opacity}
-                                                            />
-                                                        ))}
-                                                    </svg>
-                                                ) : (
-                                                    <div
-                                                        contentEditable={false}
-                                                        onDoubleClick={(e: React.MouseEvent) => {
-                                                            e.stopPropagation();
-                                                            // Enable editing mode on double-click
-                                                            const target = e.target as HTMLDivElement;
-                                                            target.contentEditable = 'true';
-                                                            target.focus();
-                                                            
-                                                            // Set up blur handler to save and disable editing
-                                                            const handleBlur = () => {
-                                                                target.contentEditable = 'false';
-                                                                handleTextEdit(element.id, target.textContent || '');
-                                                                target.removeEventListener('blur', handleBlur);
-                                                            };
-                                                            target.addEventListener('blur', handleBlur);
-                                                        }}
-                                                        className="w-full h-full flex items-center justify-center text-center outline-none bg-transparent cursor-text select-none pointer-events-none"
-                                                        style={{
-                                                            fontSize: (element as TextElement).fontSize || 16,
-                                                            color: (element as TextElement).color || '#333333',
-                                                            fontFamily: (element as TextElement).fontFamily || 'Arial',
-                                                            fontWeight: (element as TextElement).fontWeight || 'normal',
-                                                            textDecoration: (element as TextElement).textDecoration || 'none',
-                                                            textAlign: (element as TextElement).textAlign || 'left',
-                                                            lineHeight: (element as TextElement).lineHeight || 1.2,
-                                                            letterSpacing: `${(element as TextElement).letterSpacing || 0}px`,
-                                                            textTransform: (element as TextElement).textTransform || 'none'
-                                                        }}
-                                                        suppressContentEditableWarning={true}
-                                                    >
-                                                        {(element as TextElement).text}
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Resize Handles */}
-                                                {renderResizeHandles(element)}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            // Show layout button when clicking on empty page area
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const x = e.clientX - rect.left;
+                                            const y = e.clientY - rect.top;
+                                            setLayoutButtonPosition({ x, y });
+                                            setShowLayoutButton(true);
 
-                                {/* Right Page */}
-                                {rightPage && (
-                                    <div
-                                        className={`relative border-2 shadow-lg ${tool === 'draw' ? 'cursor-crosshair' : 'cursor-pointer'} ${selectedPageIndex === rightPageIndex ? 'border-blue-500' : 'border-gray-200'
-                                            }`}
-                                        style={{
-                                            width: `${rightPage.width}px`,
-                                            height: `${rightPage.height}px`,
-                                            backgroundColor: rightPage.background
-                                        }}
-                                        onDragOver={handleDragOver}
-                                        onDrop={(e) => {
-                                            setSelectedPageIndex(rightPageIndex);
-                                            handleDrop(e, rightPageIndex);
-                                        }}
-                                        onMouseDown={(e) => handleMouseDown(e, rightPageIndex)}
-                                        onMouseMove={handleMouseMove}
-                                        onMouseUp={handleMouseUp}
-                                        onClick={(e) => {
-                                            if (e.target === e.currentTarget) {
-                                                setSelectedPageIndex(rightPageIndex);
-                                                setSelectedElement(null);
-                                            }
-                                        }}
-                                    >
-                                        <div className="absolute top-2 left-2 bg-gray-800 text-white px-2 py-1 rounded text-xs">
-                                            {rightPageIndex + 1}
-                                        </div>
-                                        {rightPage.elements.map((element: Element) => (
-                                            <div
-                                                key={element.id}
-                                                draggable
-                                                onDragStart={(e) => {
-                                                    setSelectedPageIndex(rightPageIndex);
-                                                    handleDragStart(e, element);
-                                                }}
-                                                onDragEnd={(e) => {
-                                                    // Reset opacity after drag
-                                                    e.currentTarget.style.opacity = '1';
-                                                }}
-                                                onClick={(e: React.MouseEvent) => {
-                                                    e.stopPropagation();
-                                                    setSelectedPageIndex(rightPageIndex);
-                                                    setSelectedElement(element);
-                                                }}
-                                                className={`absolute cursor-move transition-all duration-150 ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''
-                                                    }`}
-                                                style={{
-                                                    left: element.x,
-                                                    top: element.y,
-                                                    width: element.width,
-                                                    height: element.height,
-                                                    transform: `rotate(${element.rotation || 0}deg)`,
-                                                    willChange: 'transform'
-                                                }}
-                                            >
-                                                {element.type === 'image' ? (
-                                                    <img
-                                                        src={(element as ImageElement).src}
-                                                        alt={(element as ImageElement).alt || ""}
-                                                        className="w-full h-full object-cover border border-gray-300"
-                                                    />
-                                                ) : element.type === 'drawing' ? (
-                                                    <svg
-                                                        width="100%"
-                                                        height="100%"
-                                                        viewBox={`0 0 ${element.width} ${element.height}`}
-                                                        className="w-full h-full"
-                                                    >
-                                                        {(element as DrawingElement).paths.map((path) => (
-                                                            <path
-                                                                key={path.id}
-                                                                d={`M ${path.points.map(p => `${p.x} ${p.y}`).join(' L ')}`}
-                                                                stroke={path.strokeColor}
-                                                                strokeWidth={path.strokeWidth}
-                                                                fill="none"
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                opacity={path.opacity}
-                                                            />
-                                                        ))}
-                                                    </svg>
-                                                ) : (
-                                                    <div
-                                                        contentEditable={false}
-                                                        onDoubleClick={(e: React.MouseEvent) => {
-                                                            e.stopPropagation();
-                                                            // Enable editing mode on double-click
-                                                            const target = e.target as HTMLDivElement;
-                                                            target.contentEditable = 'true';
-                                                            target.focus();
-                                                            
-                                                            // Set up blur handler to save and disable editing
-                                                            const handleBlur = () => {
-                                                                target.contentEditable = 'false';
-                                                                handleTextEdit(element.id, target.textContent || '');
-                                                                target.removeEventListener('blur', handleBlur);
-                                                            };
-                                                            target.addEventListener('blur', handleBlur);
-                                                        }}
-                                                        className="w-full h-full flex items-center justify-center text-center outline-none bg-transparent cursor-text select-none pointer-events-none"
-                                                        style={{
-                                                            fontSize: (element as TextElement).fontSize || 16,
-                                                            color: (element as TextElement).color || '#333333',
-                                                            fontFamily: (element as TextElement).fontFamily || 'Arial',
-                                                            fontWeight: (element as TextElement).fontWeight || 'normal',
-                                                            textDecoration: (element as TextElement).textDecoration || 'none',
-                                                            textAlign: (element as TextElement).textAlign || 'left',
-                                                            lineHeight: (element as TextElement).lineHeight || 1.2,
-                                                            letterSpacing: `${(element as TextElement).letterSpacing || 0}px`,
-                                                            textTransform: (element as TextElement).textTransform || 'none'
-                                                        }}
-                                                        suppressContentEditableWarning={true}
-                                                    >
-                                                        {(element as TextElement).text}
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Resize Handles */}
-                                                {renderResizeHandles(element)}
-                                            </div>
-                                        ))}
+                                            // Hide layout button after 5 seconds
+                                            setTimeout(() => {
+                                                setShowLayoutButton(false);
+                                            }, 5000);
+                                        }
+                                    }}
+                                >
+                                    <div className="absolute top-2 left-2 bg-gray-800 text-white px-2 py-1 rounded text-xs">
+                                        {leftPageIndex + 1}
                                     </div>
-                                )}
-                            </div>
-                        ) : (
-                            /* Scroll View - All Pages in Sequence */
-                            <div className="flex flex-col gap-6 max-h-[calc(100vh-200px)] overflow-y-auto p-4 bg-gray-50 rounded-lg">
-                                <div className="text-center mb-4">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Complete Photobook Preview</h3>
-                                    <p className="text-sm text-gray-600">Scroll through your entire photobook as it will appear when printed</p>
-                                </div>
-                                
-                                {pages.map((page: Page, index: number) => (
-                                    <div key={page.id} className="flex flex-col items-center">
-                                        <div className="mb-2">
-                                            <span className="text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-full shadow-sm">
-                                                Page {index + 1}
-                                            </span>
-                                        </div>
+
+                                    {leftPage.elements.map((element: Element) => (
                                         <div
-                                            className={`relative border-2 shadow-lg ${tool === 'draw' ? 'cursor-crosshair' : 'cursor-pointer'} ${selectedPageIndex === index ? 'border-blue-500' : 'border-gray-200'
-                                                } transition-all duration-200 hover:shadow-xl`}
+                                            key={element.id}
+                                            draggable
+                                            onDragStart={(e) => {
+                                                setSelectedPageIndex(leftPageIndex);
+                                                handleDragStart(e, element);
+                                            }}
+                                            onDragEnd={(e) => {
+                                                // Reset opacity after drag
+                                                e.currentTarget.style.opacity = '1';
+                                            }}
+                                            onClick={(e: React.MouseEvent) => {
+                                                e.stopPropagation();
+                                                setSelectedPageIndex(leftPageIndex);
+                                                setSelectedElement(element);
+                                            }}
+                                            className={`absolute cursor-move transition-all duration-150 ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''
+                                                }`}
                                             style={{
-                                                width: `${page.width * 0.8}px`, // Slightly smaller for scroll view
-                                                height: `${page.height * 0.8}px`,
-                                                backgroundColor: page.background
-                                            }}
-                                            onDragOver={handleDragOver}
-                                            onDrop={(e) => {
-                                                setSelectedPageIndex(index);
-                                                handleDrop(e, index);
-                                            }}
-                                            onMouseDown={(e) => handleMouseDown(e, index)}
-                                            onMouseMove={handleMouseMove}
-                                            onMouseUp={handleMouseUp}
-                                            onClick={(e) => {
-                                                if (e.target === e.currentTarget) {
-                                                    setSelectedPageIndex(index);
-                                                    setSelectedElement(null);
-                                                }
+                                                left: element.x,
+                                                top: element.y,
+                                                width: element.width,
+                                                height: element.height,
+                                                transform: `rotate(${element.rotation || 0}deg)`,
+                                                willChange: 'transform'
                                             }}
                                         >
-                                            {page.elements.map((element: Element) => (
-                                                <div
-                                                    key={element.id}
-                                                    draggable
-                                                    onDragStart={(e) => {
-                                                        setSelectedPageIndex(index);
-                                                        handleDragStart(e, element);
-                                                    }}
-                                                    onClick={(e: React.MouseEvent) => {
-                                                        e.stopPropagation();
-                                                        setSelectedPageIndex(index);
-                                                        setSelectedElement(element);
-                                                    }}
-                                                    className={`absolute cursor-move ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''
-                                                        }`}
-                                                    style={{
-                                                        left: element.x * 0.8, // Scale down for scroll view
-                                                        top: element.y * 0.8,
-                                                        width: element.width * 0.8,
-                                                        height: element.height * 0.8,
-                                                        transform: `rotate(${element.rotation || 0}deg)`
-                                                    }}
+                                            {element.type === 'image' ? (
+                                                <img
+                                                    src={(element as ImageElement).src}
+                                                    alt={(element as ImageElement).alt || ""}
+                                                    className="w-full h-full object-cover border border-gray-300"
+                                                />
+                                            ) : element.type === 'drawing' ? (
+                                                <svg
+                                                    width="100%"
+                                                    height="100%"
+                                                    viewBox={`0 0 ${element.width} ${element.height}`}
+                                                    className="w-full h-full"
                                                 >
-                                                    {element.type === 'image' ? (
-                                                        <img
-                                                            src={(element as ImageElement).src}
-                                                            alt={(element as ImageElement).alt || ""}
-                                                            className="w-full h-full object-cover border border-gray-300"
+                                                    {(element as DrawingElement).paths.map((path) => (
+                                                        <path
+                                                            key={path.id}
+                                                            d={`M ${path.points.map(p => `${p.x} ${p.y}`).join(' L ')}`}
+                                                            stroke={path.strokeColor}
+                                                            strokeWidth={path.strokeWidth}
+                                                            fill="none"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            opacity={path.opacity}
                                                         />
-                                                    ) : element.type === 'drawing' ? (
-                                                        <svg
-                                                            width="100%"
-                                                            height="100%"
-                                                            viewBox={`0 0 ${element.width} ${element.height}`}
-                                                            className="w-full h-full"
-                                                        >
-                                                            {(element as DrawingElement).paths.map((path) => (
-                                                                <path
-                                                                    key={path.id}
-                                                                    d={`M ${path.points.map(p => `${p.x} ${p.y}`).join(' L ')}`}
-                                                                    stroke={path.strokeColor}
-                                                                    strokeWidth={path.strokeWidth}
-                                                                    fill="none"
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    opacity={path.opacity}
-                                                                />
-                                                            ))}
-                                                        </svg>
-                                                    ) : (
-                                                        <div
-                                                            contentEditable={selectedElement?.id === element.id}
-                                                            onBlur={(e: React.FocusEvent<HTMLDivElement>) => {
-                                                                const target = e.target as HTMLDivElement;
-                                                                handleTextEdit(element.id, target.textContent || '');
-                                                            }}
-                                                            className="w-full h-full flex items-center justify-center text-center outline-none bg-transparent"
-                                                            style={{
-                                                                fontSize: ((element as TextElement).fontSize || 16) * 0.8, // Scale down font
-                                                                color: (element as TextElement).color || '#333333'
-                                                            }}
-                                                            suppressContentEditableWarning={true}
-                                                        >
-                                                            {(element as TextElement).text}
-                                                        </div>
-                                                    )}
+                                                    ))}
+                                                </svg>
+                                            ) : (
+                                                <div
+                                                    contentEditable={false}
+                                                    onDoubleClick={(e: React.MouseEvent) => {
+                                                        e.stopPropagation();
+                                                        // Enable editing mode on double-click
+                                                        const target = e.target as HTMLDivElement;
+                                                        target.contentEditable = 'true';
+                                                        target.focus();
+
+                                                        // Set up blur handler to save and disable editing
+                                                        const handleBlur = () => {
+                                                            target.contentEditable = 'false';
+                                                            handleTextEdit(element.id, target.textContent || '');
+                                                            target.removeEventListener('blur', handleBlur);
+                                                        };
+                                                        target.addEventListener('blur', handleBlur);
+                                                    }}
+                                                    className="w-full h-full flex items-center justify-center text-center outline-none bg-transparent cursor-text select-none pointer-events-none"
+                                                    style={{
+                                                        fontSize: (element as TextElement).fontSize || 16,
+                                                        color: (element as TextElement).color || '#333333',
+                                                        fontFamily: (element as TextElement).fontFamily || 'Arial',
+                                                        fontWeight: (element as TextElement).fontWeight || 'normal',
+                                                        textDecoration: (element as TextElement).textDecoration || 'none',
+                                                        textAlign: (element as TextElement).textAlign || 'left',
+                                                        lineHeight: (element as TextElement).lineHeight || 1.2,
+                                                        letterSpacing: `${(element as TextElement).letterSpacing || 0}px`,
+                                                        textTransform: (element as TextElement).textTransform || 'none'
+                                                    }}
+                                                    suppressContentEditableWarning={true}
+                                                >
+                                                    {(element as TextElement).text}
                                                 </div>
-                                            ))}
+                                            )}
+
+                                            {/* Resize Handles */}
+                                            {renderResizeHandles(element)}
                                         </div>
-                                    </div>
-                                ))}
-                                
-                                <div className="text-center mt-8 p-6 bg-white rounded-lg shadow-sm">
-                                    <h4 className="text-lg font-semibold text-gray-800 mb-2">End of Photobook</h4>
-                                    <p className="text-sm text-gray-600 mb-4">
-                                        You've reached the end of your {pages.length}-page photobook
-                                    </p>
-                                    <button
-                                        onClick={() => setViewMode('spread')}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                        Return to Edit Mode
-                                    </button>
+                                    ))}
                                 </div>
-                            </div>
-                        )}
+                            )}
+
+                            {/* Right Page */}
+                            {rightPage && (
+                                <div
+                                    className={`relative border-2 shadow-lg ${tool === 'draw' ? 'cursor-crosshair' : 'cursor-pointer'} ${selectedPageIndex === rightPageIndex ? 'border-blue-500' : 'border-gray-200'
+                                        }`}
+                                    style={{
+                                        width: `${rightPage.width}px`,
+                                        height: `${rightPage.height}px`,
+                                        backgroundColor: rightPage.background
+                                    }}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => {
+                                        setSelectedPageIndex(rightPageIndex);
+                                        handleDrop(e, rightPageIndex);
+                                    }}
+                                    onMouseDown={(e) => handleMouseDown(e, rightPageIndex)}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onClick={(e) => {
+                                        if (e.target === e.currentTarget) {
+                                            setSelectedPageIndex(rightPageIndex);
+                                            setSelectedElement(null);
+
+                                            // Show layout button when clicking on empty page area
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const x = e.clientX - rect.left;
+                                            const y = e.clientY - rect.top;
+                                            setLayoutButtonPosition({ x, y });
+                                            setShowLayoutButton(true);
+
+                                            // Hide layout button after 5 seconds
+                                            setTimeout(() => {
+                                                setShowLayoutButton(false);
+                                            }, 5000);
+                                        }
+                                    }}
+                                >
+                                    <div className="absolute top-2 left-2 bg-gray-800 text-white px-2 py-1 rounded text-xs">
+                                        {rightPageIndex + 1}
+                                    </div>
+                                    {rightPage.elements.map((element: Element) => (
+                                        <div
+                                            key={element.id}
+                                            draggable
+                                            onDragStart={(e) => {
+                                                setSelectedPageIndex(rightPageIndex);
+                                                handleDragStart(e, element);
+                                            }}
+                                            onDragEnd={(e) => {
+                                                // Reset opacity after drag
+                                                e.currentTarget.style.opacity = '1';
+                                            }}
+                                            onClick={(e: React.MouseEvent) => {
+                                                e.stopPropagation();
+                                                setSelectedPageIndex(rightPageIndex);
+                                                setSelectedElement(element);
+                                            }}
+                                            className={`absolute cursor-move transition-all duration-150 ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''
+                                                }`}
+                                            style={{
+                                                left: element.x,
+                                                top: element.y,
+                                                width: element.width,
+                                                height: element.height,
+                                                transform: `rotate(${element.rotation || 0}deg)`,
+                                                willChange: 'transform'
+                                            }}
+                                        >
+                                            {element.type === 'image' ? (
+                                                <img
+                                                    src={(element as ImageElement).src}
+                                                    alt={(element as ImageElement).alt || ""}
+                                                    className="w-full h-full object-cover border border-gray-300"
+                                                />
+                                            ) : element.type === 'drawing' ? (
+                                                <svg
+                                                    width="100%"
+                                                    height="100%"
+                                                    viewBox={`0 0 ${element.width} ${element.height}`}
+                                                    className="w-full h-full"
+                                                >
+                                                    {(element as DrawingElement).paths.map((path) => (
+                                                        <path
+                                                            key={path.id}
+                                                            d={`M ${path.points.map(p => `${p.x} ${p.y}`).join(' L ')}`}
+                                                            stroke={path.strokeColor}
+                                                            strokeWidth={path.strokeWidth}
+                                                            fill="none"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            opacity={path.opacity}
+                                                        />
+                                                    ))}
+                                                </svg>
+                                            ) : (
+                                                <div
+                                                    contentEditable={false}
+                                                    onDoubleClick={(e: React.MouseEvent) => {
+                                                        e.stopPropagation();
+                                                        // Enable editing mode on double-click
+                                                        const target = e.target as HTMLDivElement;
+                                                        target.contentEditable = 'true';
+                                                        target.focus();
+
+                                                        // Set up blur handler to save and disable editing
+                                                        const handleBlur = () => {
+                                                            target.contentEditable = 'false';
+                                                            handleTextEdit(element.id, target.textContent || '');
+                                                            target.removeEventListener('blur', handleBlur);
+                                                        };
+                                                        target.addEventListener('blur', handleBlur);
+                                                    }}
+                                                    className="w-full h-full flex items-center justify-center text-center outline-none bg-transparent cursor-text select-none pointer-events-none"
+                                                    style={{
+                                                        fontSize: (element as TextElement).fontSize || 16,
+                                                        color: (element as TextElement).color || '#333333',
+                                                        fontFamily: (element as TextElement).fontFamily || 'Arial',
+                                                        fontWeight: (element as TextElement).fontWeight || 'normal',
+                                                        textDecoration: (element as TextElement).textDecoration || 'none',
+                                                        textAlign: (element as TextElement).textAlign || 'left',
+                                                        lineHeight: (element as TextElement).lineHeight || 1.2,
+                                                        letterSpacing: `${(element as TextElement).letterSpacing || 0}px`,
+                                                        textTransform: (element as TextElement).textTransform || 'none'
+                                                    }}
+                                                    suppressContentEditableWarning={true}
+                                                >
+                                                    {(element as TextElement).text}
+                                                </div>
+                                            )}
+
+                                            {/* Resize Handles */}
+                                            {renderResizeHandles(element)}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
 
                         {/* Page Thumbnails */}
                         <div className="flex gap-2 mt-6 flex-wrap justify-center max-w-4xl">
@@ -2904,6 +2849,128 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                 </button>
                             ))}
                         </div>
+
+                        {/* AI Caption Button - Shows when image is selected */}
+                        {showCaptionButton && selectedElement && selectedElement.type === 'image' && (
+                            <div className="fixed bottom-6 right-6 z-50">
+                                <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-4 max-w-sm">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-800">Smart Text & Storytelling</h4>
+                                            <p className="text-xs text-gray-600">AI Assistant</p>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-sm text-gray-700 mb-4">
+                                        Generate an AI caption for this image and add it to your page.
+                                    </p>
+
+                                    {generatedCaption && (
+                                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <p className="text-sm text-blue-800 font-medium mb-1">Generated Caption:</p>
+                                            <p className="text-sm text-gray-700 italic">"{generatedCaption}"</p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={generateAICaption}
+                                            disabled={isGeneratingCaption}
+                                            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${isGeneratingCaption
+                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
+                                                }`}
+                                        >
+                                            {isGeneratingCaption ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Generating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                    </svg>
+                                                    Generate Caption
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowCaptionButton(false);
+                                                setGeneratedCaption('');
+                                            }}
+                                            className="px-3 py-2 text-gray-500 hover:text-gray-700 transition-colors"
+                                            title="Close"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* AI Layout Button - Shows when page is clicked */}
+                        {showLayoutButton && (
+                            <div
+                                className="fixed z-40 pointer-events-none"
+                                style={{
+                                    left: `${layoutButtonPosition.x + 250}px`,
+                                    top: `${layoutButtonPosition.y + 200}px`,
+                                }}
+                            >
+                                <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-4 max-w-sm pointer-events-auto">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                                            <Grid className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-800">AI Layout Generator</h4>
+                                            <p className="text-xs text-gray-600">Page {selectedPageIndex + 1}</p>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-sm text-gray-700 mb-4">
+                                        Generate an AI layout for this page based on existing content.
+                                    </p>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={generateAILayout}
+                                            disabled={isGeneratingLayout}
+                                            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${isGeneratingLayout
+                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                : 'bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600'
+                                                }`}
+                                        >
+                                            {isGeneratingLayout ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Generating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Grid className="w-4 h-4" />
+                                                    Generate Layout
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setShowLayoutButton(false)}
+                                            className="px-3 py-2 text-gray-500 hover:text-gray-700 transition-colors"
+                                            title="Close"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -2939,7 +3006,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             {/* Typography Controls */}
                             <div className="space-y-3">
                                 <h4 className="text-sm font-medium text-gray-700">Typography</h4>
-                                
+
                                 {/* Font Family & Size */}
                                 <div className="grid grid-cols-2 gap-2">
                                     <select
@@ -2967,26 +3034,24 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                 {/* Font Weight & Decoration */}
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => updateElement(selectedElement.id, { 
-                                            fontWeight: (selectedElement as TextElement).fontWeight === 'bold' ? 'normal' : 'bold' 
+                                        onClick={() => updateElement(selectedElement.id, {
+                                            fontWeight: (selectedElement as TextElement).fontWeight === 'bold' ? 'normal' : 'bold'
                                         })}
-                                        className={`px-3 py-1 rounded text-sm font-bold transition-colors ${
-                                            (selectedElement as TextElement).fontWeight === 'bold' 
-                                                ? 'bg-blue-100 text-blue-600' 
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
+                                        className={`px-3 py-1 rounded text-sm font-bold transition-colors ${(selectedElement as TextElement).fontWeight === 'bold'
+                                            ? 'bg-blue-100 text-blue-600'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
                                     >
                                         B
                                     </button>
                                     <button
-                                        onClick={() => updateElement(selectedElement.id, { 
-                                            textDecoration: (selectedElement as TextElement).textDecoration === 'underline' ? 'none' : 'underline' 
+                                        onClick={() => updateElement(selectedElement.id, {
+                                            textDecoration: (selectedElement as TextElement).textDecoration === 'underline' ? 'none' : 'underline'
                                         })}
-                                        className={`px-3 py-1 rounded text-sm transition-colors ${
-                                            (selectedElement as TextElement).textDecoration === 'underline' 
-                                                ? 'bg-blue-100 text-blue-600' 
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
+                                        className={`px-3 py-1 rounded text-sm transition-colors ${(selectedElement as TextElement).textDecoration === 'underline'
+                                            ? 'bg-blue-100 text-blue-600'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
                                     >
                                         U
                                     </button>
@@ -2998,11 +3063,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         <button
                                             key={align}
                                             onClick={() => updateElement(selectedElement.id, { textAlign: align })}
-                                            className={`px-2 py-1 rounded text-sm transition-colors ${
-                                                (selectedElement as TextElement).textAlign === align 
-                                                    ? 'bg-blue-100 text-blue-600' 
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                            }`}
+                                            className={`px-2 py-1 rounded text-sm transition-colors ${(selectedElement as TextElement).textAlign === align
+                                                ? 'bg-blue-100 text-blue-600'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
                                         >
                                             {align === 'left' && '⬅'}
                                             {align === 'center' && '↔'}
@@ -3061,7 +3125,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             {/* Position & Size Controls */}
                             <div className="space-y-3">
                                 <h4 className="text-sm font-medium text-gray-700">Position & Size</h4>
-                                
+
                                 {/* Position */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
@@ -3187,11 +3251,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                 <button
                                     onClick={handleTextInputSubmit}
                                     disabled={!textInputValue.trim()}
-                                    className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-                                        textInputValue.trim()
-                                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    }`}
+                                    className={`flex-1 px-4 py-2 rounded-md transition-colors ${textInputValue.trim()
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        }`}
                                 >
                                     Add Text
                                 </button>
