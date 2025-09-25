@@ -1,9 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import FormatSelector from "./components/format.selector";
-import CoverSelector from "./components/cover.selector";
-import PaperSelector from "./components/paper.selector";
-import PhotoSizeSelector from "./components/photo.size.selector";
 import { AlbumWizardData, AlbumWizardProps } from "./types/album.wizard.types";
 
 export const ALBUM_OPTIONS = {
@@ -23,7 +19,6 @@ export const ALBUM_OPTIONS = {
    coverTypes: [
       { id: "hard", label: "Hard Cover" },
       { id: "soft", label: "Soft Cover" },
-      { id: "spiral", label: "Spiral Bound" },
       { id: "premium", label: "Premium Cover" },
    ],
    paperQualities: [
@@ -33,107 +28,285 @@ export const ALBUM_OPTIONS = {
    ],
 };
 
-const getStepTitle = (step: number): string => {
-   const titles = {
-      1: "Album Format",
-      2: "Cover Type",
-      3: "Paper Quality",
-      4: "Photo Size",
+// Layout icon components
+const SquareIcon = ({ isSelected }: { isSelected: boolean }) => (
+   <div className={`w-16 h-16 border-2 rounded-lg flex items-center justify-center mb-2 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+      }`}>
+      <div className={`w-10 h-10 border-2 ${isSelected ? 'border-blue-500' : 'border-gray-400'
+         }`}></div>
+   </div>
+);
+
+const RectangleIcon = ({ isSelected }: { isSelected: boolean }) => (
+   <div className={`w-16 h-16 border-2 rounded-lg flex items-center justify-center mb-2 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+      }`}>
+      <div className={`w-12 h-8 border-2 ${isSelected ? 'border-blue-500' : 'border-gray-400'
+         }`}></div>
+   </div>
+);
+
+const PanoramicIcon = ({ isSelected }: { isSelected: boolean }) => (
+   <div className={`w-16 h-16 border-2 rounded-lg flex items-center justify-center mb-2 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+      }`}>
+      <div className={`w-14 h-6 border-2 ${isSelected ? 'border-blue-500' : 'border-gray-400'
+         }`}></div>
+   </div>
+);
+
+const getFormatIcon = (formatId: string, isSelected: boolean) => {
+   switch (formatId) {
+      case 'square':
+         return <SquareIcon isSelected={isSelected} />;
+      case 'rectangular':
+         return <RectangleIcon isSelected={isSelected} />;
+      case 'panoramic':
+         return <PanoramicIcon isSelected={isSelected} />;
+      default:
+         return <SquareIcon isSelected={isSelected} />;
+   }
+};
+
+const getCoverDescription = (coverId: string): string => {
+   const descriptions: Record<string, string> = {
+      hard: "Durable hardcover with premium finish",
+      soft: "Flexible softcover with matte lamination",
+      spiral: "Lay-flat spiral binding for easy viewing",
+      premium: "Luxury leather-like material with debossing",
    };
-   return titles[step as keyof typeof titles] || "";
+   return descriptions[coverId] || "";
+};
+
+const getPaperDescription = (paperId: string): string => {
+   const descriptions: Record<string, string> = {
+      matte: "Non-reflective matte finish",
+      glossy: "High-gloss reflective finish",
+      premium: "Premium archival quality paper",
+   };
+   return descriptions[paperId] || "";
+};
+
+// Price calculation function
+const calculatePrice = (
+   pages: number,
+   format: string,
+   coverType: string,
+   paperQuality: string
+): string => {
+   let basePrice = 29.99; // Base price for 24 pages
+   
+   // Additional pages cost (every 4 pages above 24)
+   const additionalPages = Math.max(0, pages - 24);
+   const additionalPagesCost = Math.ceil(additionalPages / 4) * 1.50;
+   
+   // Format pricing
+   const formatPricing: Record<string, number> = {
+      square: 0,
+      rectangular: 2.00,
+      panoramic: 5.00,
+   };
+   
+   // Cover type pricing
+   const coverPricing: Record<string, number> = {
+      hard: 0,
+      soft: -3.00,
+      premium: 15.00,
+   };
+   
+   // Paper quality pricing
+   const paperPricing: Record<string, number> = {
+      matte: 0,
+      glossy: 3.00,
+      premium: 8.00,
+   };
+   
+   const totalPrice = basePrice + 
+                     additionalPagesCost + 
+                     (formatPricing[format] || 0) + 
+                     (coverPricing[coverType] || 0) + 
+                     (paperPricing[paperQuality] || 0);
+   
+   return totalPrice.toFixed(2);
 };
 
 const AlbumWizard: React.FC<AlbumWizardProps> = ({ onComplete, params }) => {
-   const [step, setStep] = useState(1);
    const [albumData, setAlbumData] = useState<AlbumWizardData>({
       format: "square",
       dimensions: "20x20",
       coverType: "hard",
       paperQuality: "matte",
-      photosize: "medium",
       albumId: params.id,
+      pages: 24,
    });
-
-   const handleNext = () => {
-      if (step < 4) {
-         setStep(step + 1);
-      } else {
-         onComplete(albumData);
-      }
-   };
-
-   const handleBack = () => {
-      if (step > 1) {
-         setStep(step - 1);
-      }
-   };
 
    const updateAlbumData = (data: Partial<typeof albumData>) => {
       setAlbumData({ ...albumData, ...data });
    };
 
+   const handleComplete = () => {
+      onComplete(albumData);
+   };
+
    return (
-      <div className="max-w-2xl mx-auto p-6">
-         <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-               {Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                     key={i}
-                     className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${i + 1 === step ? "bg-blue-500 text-white" : "bg-gray-200"}`}
-                  >
-                     {i + 1}
+      <div className="p-6 space-y-8">
+         <div  className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Album Format Selection */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+               <h2 className="text-xl font-semibold mb-4 text-gray-800">Album Format</h2>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {ALBUM_OPTIONS.formats.map(format => (
+                     <div key={format.id} className="space-y-4">
+                        <button
+                           className={`w-full p-4 border-2 rounded-lg transition-all duration-200 hover:shadow-md ${albumData.format === format.id
+                              ? "border-blue-500 bg-blue-50 shadow-md"
+                              : "border-gray-200 hover:border-blue-200"
+                              }`}
+                           onClick={() =>
+                              updateAlbumData({
+                                 format: format.id as "square" | "rectangular" | "panoramic",
+                                 dimensions: format.dimensions[0],
+                              })
+                           }
+                        >
+                           <div className="flex flex-col items-center">
+                              {getFormatIcon(format.id, albumData.format === format.id)}
+                              <div className="text-lg font-medium">{format.label}</div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                 Available sizes: {format.dimensions.join(", ")} cm
+                              </div>
+                           </div>
+                        </button>
+
+                        {albumData.format === format.id && (
+                           <div className="space-y-2">
+                              <label className="block text-sm font-medium text-gray-700">
+                                 Select Size
+                              </label>
+                              <select
+                                 className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                 value={albumData.dimensions}
+                                 onChange={e =>
+                                    updateAlbumData({
+                                       dimensions: e.target.value,
+                                    })
+                                 }
+                              >
+                                 {format.dimensions.map(dim => (
+                                    <option key={dim} value={dim}>
+                                       {dim} cm
+                                    </option>
+                                 ))}
+                              </select>
+                           </div>
+                        )}
+                     </div>
+                  ))}
+               </div>
+            </div>
+
+            {/* Cover Type Selection */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+               <h2 className="text-xl font-semibold mb-4 text-gray-800">Cover Type</h2>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {ALBUM_OPTIONS.coverTypes.map(cover => (
+                     <button
+                        key={cover.id}
+                        className={`p-4 border-2 rounded-lg transition-all duration-200 hover:shadow-md ${albumData.coverType === cover.id
+                           ? "border-blue-500 bg-blue-50 shadow-md"
+                           : "border-gray-200 hover:border-blue-200"
+                           }`}
+                        onClick={() =>
+                           updateAlbumData({
+                              coverType: cover.id as "hard" | "soft" | "premium",
+                           })
+                        }
+                     >
+                        <div className="text-lg font-medium">{cover.label}</div>
+                        <div className="mt-2 text-sm text-gray-500">
+                           {getCoverDescription(cover.id)}
+                        </div>
+                     </button>
+                  ))}
+               </div>
+            </div>
+
+            {/* Paper Quality Selection */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+               <h2 className="text-xl font-semibold mb-4 text-gray-800">Paper Quality</h2>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {ALBUM_OPTIONS.paperQualities.map(paper => (
+                     <button
+                        key={paper.id}
+                        className={`p-4 border-2 rounded-lg transition-all duration-200 hover:shadow-md ${albumData.paperQuality === paper.id
+                           ? "border-blue-500 bg-blue-50 shadow-md"
+                           : "border-gray-200 hover:border-blue-200"
+                           }`}
+                        onClick={() =>
+                           updateAlbumData({
+                              paperQuality: paper.id as "matte" | "glossy" | "premium",
+                           })
+                        }
+                     >
+                        <div className="text-lg font-medium">{paper.label}</div>
+                        <div className="mt-2 text-sm text-gray-500">
+                           {getPaperDescription(paper.id)}
+                        </div>
+                     </button>
+                  ))}
+               </div>
+            </div>
+
+
+            {/* Pages Selection */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+               <h2 className="text-xl font-semibold mb-4 text-gray-800">Number of Pages</h2>
+               <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                     <div className="flex items-center space-x-4">
+                        <button
+                           onClick={() => updateAlbumData({ pages: Math.max(12, albumData.pages - 4) })}
+                           className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors duration-200"
+                           disabled={albumData.pages <= 12}
+                        >
+                           <span className="text-xl font-bold">-</span>
+                        </button>
+                        <div className="text-center">
+                           <div className="text-2xl font-bold text-gray-800">{albumData.pages}</div>
+                           <div className="text-sm text-gray-500">pages</div>
+                        </div>
+                        <button
+                           onClick={() => updateAlbumData({ pages: Math.min(100, albumData.pages + 4) })}
+                           className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors duration-200"
+                           disabled={albumData.pages >= 100}
+                        >
+                           <span className="text-xl font-bold">+</span>
+                        </button>
+                     </div>
+                     <div className="text-right">
+                        <div className="text-lg font-semibold text-blue-600">
+                           ${calculatePrice(albumData.pages, albumData.format, albumData.coverType, albumData.paperQuality)}
+                        </div>
+                        <div className="text-sm text-gray-500">Total Price</div>
+                     </div>
                   </div>
-               ))}
+                  <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                     <p><strong>Base price:</strong> $29.99 (24 pages)</p>
+                     <p><strong>Additional pages:</strong> $1.50 per 4 pages</p>
+                     <p><strong>Premium options:</strong> +$5-15 depending on selection</p>
+                  </div>
+               </div>
             </div>
-            <div className="text-center text-sm text-gray-600 mt-2">
-               Step {step} of 4: {getStepTitle(step)}
-            </div>
+            
          </div>
-
-         <div className="mb-8">
-            {step === 1 && (
-               <FormatSelector
-                  selected={albumData.format}
-                  dimensions={albumData.dimensions}
-                  onChange={updateAlbumData}
-               />
-            )}
-            {step === 2 && (
-               <CoverSelector
-                  selected={albumData.coverType}
-                  onChange={updateAlbumData}
-               />
-            )}
-            {step === 3 && (
-               <PaperSelector
-                  selected={albumData.paperQuality}
-                  onChange={updateAlbumData}
-               />
-            )}
-            {step === 4 && (
-               <PhotoSizeSelector
-                  selected={albumData.photosize}
-                  onChange={updateAlbumData}
-               />
-            )}
-         </div>
-
-         <div className="flex justify-between">
+         {/* Complete Button */}
+         <div className="flex justify-center pt-6">
             <button
-               onClick={handleBack}
-               disabled={step === 1}
-               className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+               onClick={handleComplete}
+               className="px-8 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors duration-200 shadow-md hover:shadow-lg"
             >
-               Back
-            </button>
-            <button
-               onClick={handleNext}
-               className="px-4 py-2 bg-blue-500 text-white rounded"
-            >
-               {step === 4 ? "Complete" : "Next"}
+               Create Album
             </button>
          </div>
+
       </div>
    );
 };

@@ -21,7 +21,6 @@ interface AlbumFormat {
    id: string;
    name: string;
    dimensions: string;
-   photosize: string;
    coverType: string;
    paperQuality: string;
    description: string;
@@ -32,7 +31,6 @@ const albumFormats: AlbumFormat[] = [
       id: "standard",
       name: "Standard Album",
       dimensions: "8x10",
-      photosize: "4x6",
       coverType: "hardcover",
       paperQuality: "premium",
       description: "Perfect for everyday memories",
@@ -41,7 +39,6 @@ const albumFormats: AlbumFormat[] = [
       id: "premium",
       name: "Premium Album",
       dimensions: "11x14",
-      photosize: "6x8",
       coverType: "hardcover",
       paperQuality: "professional",
       description: "High-quality professional album",
@@ -50,7 +47,6 @@ const albumFormats: AlbumFormat[] = [
       id: "mini",
       name: "Mini Album",
       dimensions: "6x6",
-      photosize: "3x3",
       coverType: "softcover",
       paperQuality: "standard",
       description: "Compact and portable",
@@ -124,7 +120,6 @@ export default function CreateAlbumPage() {
             status: "draft",
             format: selectedFormat.id,
             dimensions: selectedFormat.dimensions,
-            photosize: selectedFormat.photosize,
             coverType: selectedFormat.coverType,
             paperQuality: selectedFormat.paperQuality,
          };
@@ -281,7 +276,6 @@ export default function CreateAlbumPage() {
                                  </p>
                                  <div className="text-xs text-gray-500">
                                     <p>Dimensions: {format.dimensions}</p>
-                                    <p>Photo Size: {format.photosize}</p>
                                     <p>Cover: {format.coverType}</p>
                                  </div>
                               </div>

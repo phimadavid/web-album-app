@@ -64,19 +64,19 @@ const UploadedImagesGrid: React.FC<ImageGalleryProps> = ({
       <div className="grid grid-cols-1 grid-rows-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
          <div className="min-h-xl col-start-1 md:col-start-1 col-span-3">
             <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-               <div className="text-end justify-center max-w-2xl mx-auto">
-                  <h2 className="text-xl col-start-1 font-semibold mb-4 text-end">
+               <div className="text-end">
+                  {/* <h2 className="text-xl col-start-1 font-semibold mb-4 text-end">
                      Upload Complete
-                  </h2>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  </h2> */}
+                  <h1 className="text-2xl font-bold text-gray-900">
                      Select Your Photo Album Format
                   </h1>
-
+{/* 
                   <p className="mt-2 text-gray-600 leading-6">
                      Your images have been successfully uploaded and are ready
                      for the next step. Follow the steps below to create your
                      custom photo album.
-                  </p>
+                  </p> */}
                </div>
 
                <AlbumWizard onComplete={handleComplete} params={params} />

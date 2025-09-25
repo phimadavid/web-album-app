@@ -12,6 +12,10 @@ import {
    Size,
    Bounds,
    ElementType,
+   MaskElement,
+   MaskType,
+   ShapeType,
+   ShapeProperties,
 } from "./types";
 
 // Element validation functions
@@ -506,4 +510,165 @@ export const handleError = (
       "UNKNOWN_ERROR",
       error
    );
+};
+
+// Mask utilities
+export const generateMaskId = (): string => {
+   return `mask_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+export const createMaskElement = (
+   shapeType: ShapeType,
+   position: Position,
+   size: Size,
+   options?: Partial<MaskElement>
+): MaskElement => {
+   const shapeProperties: ShapeProperties = {};
+   
+   // Set default properties based on shape type
+   switch (shapeType) {
+      case 'star':
+         shapeProperties.points = 5;
+         shapeProperties.innerRadius = 0.4;
+         break;
+      case 'polygon':
+         shapeProperties.sides = 6;
+         break;
+      case 'rectangle':
+         shapeProperties.cornerRadius = 0;
+         break;
+   }
+
+   return {
+      id: generateMaskId(),
+      type: "shape",
+      shape: {
+         type: shapeType,
+         properties: shapeProperties
+      },
+      x: position.x,
+      y: position.y,
+      width: size.width,
+      height: size.height,
+      rotation: 0,
+      feather: 0,
+      invert: false,
+      opacity: 1,
+      ...options,
+   };
+};
+
+export const generateShapePath = (shapeType: ShapeType, width: number, height: number, properties?: ShapeProperties): string => {
+   const cx = width / 2;
+   const cy = height / 2;
+   const rx = width / 2;
+   const ry = height / 2;
+
+   switch (shapeType) {
+      case 'rectangle':
+         const cornerRadius = properties?.cornerRadius || 0;
+         if (cornerRadius > 0) {
+            return `M ${cornerRadius} 0 L ${width - cornerRadius} 0 Q ${width} 0 ${width} ${cornerRadius} L ${width} ${height - cornerRadius} Q ${width} ${height} ${width - cornerRadius} ${height} L ${cornerRadius} ${height} Q 0 ${height} 0 ${height - cornerRadius} L 0 ${cornerRadius} Q 0 0 ${cornerRadius} 0 Z`;
+         }
+         return `M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z`;
+
+      case 'circle':
+         return `M ${cx} 0 A ${rx} ${ry} 0 1 1 ${cx} ${height} A ${rx} ${ry} 0 1 1 ${cx} 0 Z`;
+
+      case 'ellipse':
+         return `M ${cx} 0 A ${rx} ${ry} 0 1 1 ${cx} ${height} A ${rx} ${ry} 0 1 1 ${cx} 0 Z`;
+
+      case 'triangle':
+         return `M ${cx} 0 L ${width} ${height} L 0 ${height} Z`;
+
+      case 'star':
+         const points = properties?.points || 5;
+         const innerRadius = properties?.innerRadius || 0.4;
+         const outerRadius = Math.min(rx, ry);
+         const innerR = outerRadius * innerRadius;
+         let path = '';
+         
+         for (let i = 0; i < points * 2; i++) {
+            const angle = (i * Math.PI) / points - Math.PI / 2;
+            const radius = i % 2 === 0 ? outerRadius : innerR;
+            const x = cx + Math.cos(angle) * radius;
+            const y = cy + Math.sin(angle) * radius;
+            path += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+         }
+         return path + ' Z';
+
+      case 'heart':
+         const heartWidth = width * 0.8;
+         const heartHeight = height * 0.8;
+         const heartX = (width - heartWidth) / 2;
+         const heartY = (height - heartHeight) / 2 + heartHeight * 0.1;
+         return `M ${heartX + heartWidth/2} ${heartY + heartHeight * 0.3} C ${heartX + heartWidth/2} ${heartY + heartHeight * 0.1} ${heartX + heartWidth * 0.1} ${heartY} ${heartX + heartWidth * 0.1} ${heartY + heartHeight * 0.25} C ${heartX + heartWidth * 0.1} ${heartY + heartHeight * 0.4} ${heartX + heartWidth/2} ${heartY + heartHeight * 0.6} ${heartX + heartWidth/2} ${heartY + heartHeight} C ${heartX + heartWidth/2} ${heartY + heartHeight * 0.6} ${heartX + heartWidth * 0.9} ${heartY + heartHeight * 0.4} ${heartX + heartWidth * 0.9} ${heartY + heartHeight * 0.25} C ${heartX + heartWidth * 0.9} ${heartY} ${heartX + heartWidth/2} ${heartY + heartHeight * 0.1} ${heartX + heartWidth/2} ${heartY + heartHeight * 0.3} Z`;
+
+      case 'diamond':
+         return `M ${cx} 0 L ${width} ${cy} L ${cx} ${height} L 0 ${cy} Z`;
+
+      case 'hexagon':
+         const hexRadius = Math.min(rx, ry);
+         let hexPath = '';
+         for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            const x = cx + Math.cos(angle) * hexRadius;
+            const y = cy + Math.sin(angle) * hexRadius;
+            hexPath += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+         }
+         return hexPath + ' Z';
+
+      case 'arrow':
+         const arrowWidth = width * 0.8;
+         const arrowHeight = height * 0.6;
+         const arrowX = (width - arrowWidth) / 2;
+         const arrowY = (height - arrowHeight) / 2;
+         return `M ${arrowX} ${arrowY + arrowHeight/3} L ${arrowX + arrowWidth * 0.6} ${arrowY + arrowHeight/3} L ${arrowX + arrowWidth * 0.6} ${arrowY} L ${arrowX + arrowWidth} ${arrowY + arrowHeight/2} L ${arrowX + arrowWidth * 0.6} ${arrowY + arrowHeight} L ${arrowX + arrowWidth * 0.6} ${arrowY + arrowHeight * 2/3} L ${arrowX} ${arrowY + arrowHeight * 2/3} Z`;
+
+      case 'cloud':
+         const cloudWidth = width * 0.9;
+         const cloudHeight = height * 0.7;
+         const cloudX = (width - cloudWidth) / 2;
+         const cloudY = (height - cloudHeight) / 2 + cloudHeight * 0.2;
+         return `M ${cloudX + cloudWidth * 0.2} ${cloudY + cloudHeight * 0.6} C ${cloudX + cloudWidth * 0.1} ${cloudY + cloudHeight * 0.6} ${cloudX} ${cloudY + cloudHeight * 0.4} ${cloudX + cloudWidth * 0.1} ${cloudY + cloudHeight * 0.3} C ${cloudX + cloudWidth * 0.1} ${cloudY + cloudHeight * 0.1} ${cloudX + cloudWidth * 0.3} ${cloudY} ${cloudX + cloudWidth * 0.4} ${cloudY + cloudHeight * 0.1} C ${cloudX + cloudWidth * 0.5} ${cloudY} ${cloudX + cloudWidth * 0.7} ${cloudY + cloudHeight * 0.05} ${cloudX + cloudWidth * 0.8} ${cloudY + cloudHeight * 0.2} C ${cloudX + cloudWidth * 0.95} ${cloudY + cloudHeight * 0.15} ${cloudX + cloudWidth} ${cloudY + cloudHeight * 0.35} ${cloudX + cloudWidth * 0.9} ${cloudY + cloudHeight * 0.5} C ${cloudX + cloudWidth * 0.95} ${cloudY + cloudHeight * 0.6} ${cloudX + cloudWidth * 0.8} ${cloudY + cloudHeight * 0.7} ${cloudX + cloudWidth * 0.7} ${cloudY + cloudHeight * 0.6} Z`;
+
+      case 'polygon':
+         const sides = properties?.sides || 6;
+         const polyRadius = Math.min(rx, ry);
+         let polyPath = '';
+         for (let i = 0; i < sides; i++) {
+            const angle = (i * 2 * Math.PI) / sides - Math.PI / 2;
+            const x = cx + Math.cos(angle) * polyRadius;
+            const y = cy + Math.sin(angle) * polyRadius;
+            polyPath += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+         }
+         return polyPath + ' Z';
+
+      default:
+         return `M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z`;
+   }
+};
+
+export const applyMaskToImage = (imageElement: ImageElement, mask: MaskElement): ImageElement => {
+   return {
+      ...imageElement,
+      mask: mask
+   };
+};
+
+export const removeMaskFromImage = (imageElement: ImageElement): ImageElement => {
+   const { mask, ...elementWithoutMask } = imageElement;
+   return elementWithoutMask;
+};
+
+export const updateMask = (imageElement: ImageElement, maskUpdates: Partial<MaskElement>): ImageElement => {
+   if (!imageElement.mask) return imageElement;
+   
+   return {
+      ...imageElement,
+      mask: {
+         ...imageElement.mask,
+         ...maskUpdates
+      }
+   };
 };

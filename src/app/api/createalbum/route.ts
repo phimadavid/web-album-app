@@ -9,10 +9,10 @@ export async function POST(request: Request) {
       const requiredFields = {
          format: "Album format",
          dimensions: "Dimensions",
-         photosize: "Photo size",
          coverType: "Cover type",
          paperQuality: "Paper quality",
          albumId: "Album ID",
+         pages: "Pages",
       };
 
       for (const [field, label] of Object.entries(requiredFields)) {
@@ -28,9 +28,9 @@ export async function POST(request: Request) {
          albumId: body.albumId,
          format: body.format,
          dimensions: body.dimensions,
-         photosize: body.photosize,
          coverType: body.coverType,
          paperQuality: body.paperQuality,
+         pages: body.pages,
       };
 
       const album = await CreateAlbum.create(albumData);

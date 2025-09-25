@@ -22,7 +22,6 @@ interface BookFormat {
    id: string;
    title: string;
    dimensions: string;
-   photosize: string;
    coverType: string;
    paperQuality: string;
    albumId: string;
@@ -230,7 +229,6 @@ const OrderModal: React.FC<OrderModalProps> = ({
                const fallbackFormats = PricingService.getBookFormats().map(
                   format => ({
                      ...format,
-                     photosize: "standard",
                      coverType: "hardcover",
                      paperQuality: "premium",
                      albumId: albumId,
@@ -248,7 +246,6 @@ const OrderModal: React.FC<OrderModalProps> = ({
          const fallbackFormats = PricingService.getBookFormats().map(
             format => ({
                ...format,
-               photosize: "standard",
                coverType: "hardcover",
                paperQuality: "premium",
                albumId: albumId,

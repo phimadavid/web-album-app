@@ -22,9 +22,9 @@ class CreateAlbum extends Model<
    declare albumId: string;
    declare format: string;
    declare dimensions: string;
-   declare photosize: string;
    declare coverType: string;
    declare paperQuality: string;
+   declare pages: number;
 
    // Timestamps
    declare readonly createdAt: CreationOptional<Date>;
@@ -55,10 +55,6 @@ CreateAlbum.init(
          type: DataTypes.STRING,
          allowNull: false,
       },
-      photosize: {
-         type: DataTypes.STRING,
-         allowNull: false,
-      },
       coverType: {
          type: DataTypes.STRING,
          allowNull: false,
@@ -66,6 +62,11 @@ CreateAlbum.init(
       paperQuality: {
          type: DataTypes.STRING,
          allowNull: false,
+      },
+      pages: {
+         type: DataTypes.INTEGER,
+         allowNull: false,
+         defaultValue: 24,
       },
       createdAt: {
          allowNull: false,

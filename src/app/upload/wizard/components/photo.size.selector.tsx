@@ -45,7 +45,7 @@ const PhotoSizeSelector: React.FC<PhotoSizeSelectorProps> = ({
                                   ? "border-blue-500 bg-blue-50"
                                   : "border-gray-200 hover:border-blue-200"
                             }`}
-                  onClick={() => onChange({ photosize: size.id })}
+                  onClick={() => onChange({ size: size.id })}
                >
                   <div className="text-lg font-medium">{size.label}</div>
                   <div className="text-sm text-gray-600 mt-1">

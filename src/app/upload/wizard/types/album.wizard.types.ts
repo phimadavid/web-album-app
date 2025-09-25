@@ -3,9 +3,9 @@ export interface AlbumWizardData {
    albumId: string;
    format: "square" | "rectangular" | "panoramic";
    dimensions: string;
-   photosize: string;
    coverType: "hard" | "soft" | "spiral" | "premium";
    paperQuality: "matte" | "glossy" | "premium";
+   pages: number;
 }
 
 export interface FormatSelectorProps {
@@ -29,9 +29,10 @@ export interface PaperSelectorProps {
    onChange: (data: { paperQuality: "matte" | "glossy" | "premium" }) => void;
 }
 
+
 export interface PhotoSizeSelectorProps {
    selected: string;
-   onChange: (data: { photosize: string }) => void;
+   onChange: (data: any) => void;
 }
 
 export interface AlbumWizardProps {

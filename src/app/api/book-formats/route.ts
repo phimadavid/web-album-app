@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
             "albumId",
             "format",
             "dimensions",
-            "photosize",
             "coverType",
             "paperQuality",
+            "pages",
             "createdAt",
             "updatedAt",
          ],
@@ -41,9 +41,9 @@ export async function GET(request: NextRequest) {
          id: format.id.toString(),
          title: format.format,
          dimensions: format.dimensions,
-         photosize: format.photosize,
          coverType: format.coverType,
          paperQuality: format.paperQuality,
+         pages: format.pages,
          albumId: format.albumId,
          // Default pricing - you may want to add pricing fields to the CreateAlbum model
          softcover: format.coverType === "softcover" ? 140 : null,
@@ -76,9 +76,9 @@ export async function POST(request: NextRequest) {
          albumId,
          format,
          dimensions,
-         photosize,
          coverType,
          paperQuality,
+         pages,
       } = await request.json();
 
       // Validate required fields
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
          !albumId ||
          !format ||
          !dimensions ||
-         !photosize ||
          !coverType ||
-         !paperQuality
+         !paperQuality ||
+         !pages
       ) {
          return NextResponse.json(
             { error: "Missing required fields" },
@@ -100,9 +100,9 @@ export async function POST(request: NextRequest) {
          albumId,
          format,
          dimensions,
-         photosize,
          coverType,
          paperQuality,
+         pages,
       });
 
       return NextResponse.json({
@@ -112,9 +112,9 @@ export async function POST(request: NextRequest) {
             id: bookFormat.id.toString(),
             title: bookFormat.format,
             dimensions: bookFormat.dimensions,
-            photosize: bookFormat.photosize,
             coverType: bookFormat.coverType,
             paperQuality: bookFormat.paperQuality,
+            pages: bookFormat.pages,
             albumId: bookFormat.albumId,
          },
       });

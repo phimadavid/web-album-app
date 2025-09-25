@@ -28,14 +28,14 @@ export async function POST(request: Request) {
       const album = await Album.create(albumData);
 
       // If detailed album specifications are provided, create the detailed album
-      if (body.format && body.dimensions && body.photosize) {
+      if (body.format && body.dimensions && body.pages) {
          const detailedAlbumData: CreateAlbumTypes = {
             albumId: album.id,
             format: body.format,
             dimensions: body.dimensions,
-            photosize: body.photosize,
-            coverType: body.coverType || "hardcover",
-            paperQuality: body.paperQuality || "premium",
+            coverType: body.coverType || "hard",
+            paperQuality: body.paperQuality || "matte",
+            pages: body.pages || 24,
          };
 
          await CreateAlbum.create(detailedAlbumData);

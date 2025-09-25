@@ -2,9 +2,9 @@ export type CreateAlbumTypes = {
    albumId: string;
    format: "square" | "rectangular" | "panoramic";
    dimensions: string;
-   photosize: string;
    coverType: "hard" | "soft" | "spiral" | "premium";
    paperQuality: "matte" | "glossy" | "premium";
+   pages: number;
    createdAt?: Date;
    updatedAt?: Date;
 };

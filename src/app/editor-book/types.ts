@@ -41,6 +41,8 @@ export interface ImageElement extends BaseElement {
    shadowX?: number;
    shadowY?: number;
    shadowColor?: string;
+   // Masking Properties
+   mask?: MaskElement;
 }
 
 export interface TextElement extends BaseElement {
@@ -82,6 +84,53 @@ export interface StickerElement extends BaseElement {
    opacity?: number;
 }
 
+// New Mask Element Types
+export interface MaskElement {
+   id: string;
+   type: MaskType;
+   shape: MaskShape;
+   x: number;
+   y: number;
+   width: number;
+   height: number;
+   rotation?: number;
+   feather?: number; // Soft edge blur amount
+   invert?: boolean; // Invert the mask
+   opacity?: number; // Mask opacity
+}
+
+export type MaskType = "shape" | "custom";
+
+export interface MaskShape {
+   type: ShapeType;
+   properties: ShapeProperties;
+}
+
+export type ShapeType = 
+   | "rectangle" 
+   | "circle" 
+   | "ellipse" 
+   | "triangle" 
+   | "star" 
+   | "heart" 
+   | "diamond" 
+   | "hexagon" 
+   | "arrow" 
+   | "cloud"
+   | "polygon";
+
+export interface ShapeProperties {
+   // Common properties
+   cornerRadius?: number; // For rectangles
+   // Star specific
+   points?: number; // Number of star points
+   innerRadius?: number; // Inner radius for stars
+   // Polygon specific
+   sides?: number; // Number of sides for polygon
+   // Custom path
+   path?: string; // SVG path string for custom shapes
+}
+
 export type ElementType = "image" | "text" | "drawing" | "sticker";
 export type Element =
    | ImageElement
@@ -114,7 +163,7 @@ export interface DragData {
    elementId: string;
 }
 
-export type Tool = "select" | "image" | "text" | "draw" | "sticker" | "crop";
+export type Tool = "select" | "image" | "text" | "draw" | "sticker" | "crop" | "mask";
 
 export interface PhotobookEditorState {
    currentPage: number;
@@ -267,4 +316,19 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
 export const DEFAULT_ELEMENT_SIZE: Size = {
    width: 200,
    height: 150,
+};
+
+// Mask Shape Definitions
+export const MASK_SHAPES: Record<ShapeType, { name: string; icon: string; path?: string }> = {
+   rectangle: { name: "Rectangle", icon: "⬜" },
+   circle: { name: "Circle", icon: "⭕" },
+   ellipse: { name: "Ellipse", icon: "⭕" },
+   triangle: { name: "Triangle", icon: "🔺" },
+   star: { name: "Star", icon: "⭐" },
+   heart: { name: "Heart", icon: "❤️" },
+   diamond: { name: "Diamond", icon: "💎" },
+   hexagon: { name: "Hexagon", icon: "⬡" },
+   arrow: { name: "Arrow", icon: "➡️" },
+   cloud: { name: "Cloud", icon: "☁️" },
+   polygon: { name: "Polygon", icon: "⬟" }
 };

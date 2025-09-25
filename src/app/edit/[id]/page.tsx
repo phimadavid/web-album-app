@@ -19,7 +19,10 @@ import {
     DragData,
     Tool,
     ExportOptions,
-    DEFAULT_PAGE_SIZE
+    DEFAULT_PAGE_SIZE,
+    MaskElement,
+    ShapeType,
+    MASK_SHAPES
 } from '../../editor-book/types';
 
 // Import utility functions
@@ -31,7 +34,12 @@ import {
     createDrawingPath,
     generateElementId,
     validateElement,
-    handleError
+    handleError,
+    createMaskElement,
+    generateShapePath,
+    applyMaskToImage,
+    removeMaskFromImage,
+    updateMask
 } from '../../editor-book/utils';
 
 import { useAlbumData } from "@/backend/services/actions/getAlbums";
@@ -111,6 +119,12 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const [isGeneratingLayout, setIsGeneratingLayout] = useState<boolean>(false);
     const [layoutButtonPosition, setLayoutButtonPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
     const [currentLayoutIndex, setCurrentLayoutIndex] = useState<number>(0);
+    // Mask-related states
+    const [showMaskPanel, setShowMaskPanel] = useState<boolean>(false);
+    const [selectedMaskShape, setSelectedMaskShape] = useState<ShapeType>('circle');
+    const [maskFeather, setMaskFeather] = useState<number>(0);
+    const [maskInvert, setMaskInvert] = useState<boolean>(false);
+    const [maskOpacity, setMaskOpacity] = useState<number>(1);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -476,197 +490,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }, 100);
     }, []);
 
-    // Generate AI content suggestions
-    const generateAIContent = useCallback(async () => {
-        setIsGeneratingAI(true);
-        try {
-            // Analyze current page context
-            const currentPage = pages[selectedPageIndex];
-            const imageElements = currentPage.elements.filter(el => el.type === 'image');
-            const hasImages = imageElements.length > 0;
-
-            // Mock AI content generation based on context
-            const contextPrompt = hasImages
-                ? `Generate ${aiContentType} for a photo album page with ${imageElements.length} image(s). Tone: ${aiTone}, Style: ${aiStyle}`
-                : `Generate ${aiContentType} for a photo album page. Tone: ${aiTone}, Style: ${aiStyle}`;
-
-            // Simulate API call to AI service
-            const response = await fetch('/api/generate/content', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    type: aiContentType,
-                    tone: aiTone,
-                    style: aiStyle,
-                    context: contextPrompt,
-                    albumName: albumData?.bookName || 'Photo Album',
-                    pageNumber: selectedPageIndex + 1
-                }),
-            });
-
-            let suggestions: string[] = [];
-
-            if (response.ok) {
-                const data = await response.json();
-                suggestions = data.suggestions || [];
-            } else {
-                // Fallback suggestions based on type and tone
-                suggestions = generateFallbackSuggestions(aiContentType, aiTone, aiStyle);
-            }
-
-            setAiSuggestions(suggestions);
-            toast.success('AI content generated successfully!');
-        } catch (error) {
-            console.error('Error generating AI content:', error);
-            // Use fallback suggestions
-            const suggestions = generateFallbackSuggestions(aiContentType, aiTone, aiStyle);
-            setAiSuggestions(suggestions);
-            toast.info('Using sample suggestions - AI service not available');
-        } finally {
-            setIsGeneratingAI(false);
-        }
-    }, [aiContentType, aiTone, aiStyle, pages, selectedPageIndex, albumData?.bookName]);
-
-    // Generate fallback suggestions
-    const generateFallbackSuggestions = useCallback((type: string, tone: string, style: string): string[] => {
-        const suggestions: { [key: string]: { [key: string]: { [key: string]: string[] } } } = {
-            caption: {
-                casual: {
-                    single: [
-                        "Another beautiful moment captured!",
-                        "Making memories that last forever.",
-                        "Life is better with friends like these.",
-                        "Perfect day, perfect memories."
-                    ],
-                    paragraph: [
-                        "This moment perfectly captures the joy and laughter we shared together. Sometimes the best memories are made in the simplest moments.",
-                        "Looking back at this photo brings back all the wonderful feelings from that day. These are the moments that make life truly special."
-                    ],
-                    question: [
-                        "Can you remember a moment that made you smile this wide?",
-                        "What makes this memory so special to you?",
-                        "Isn't it amazing how one photo can bring back so many feelings?"
-                    ],
-                    quote: [
-                        "\"The best things in life are the people we love, the places we've been, and the memories we've made along the way.\"",
-                        "\"Life is not measured by the number of breaths we take, but by the moments that take our breath away.\""
-                    ]
-                },
-                sentimental: {
-                    single: [
-                        "Treasured moments like these warm the heart.",
-                        "Some memories are too beautiful for words.",
-                        "In this moment, everything was perfect.",
-                        "A memory to hold close to the heart forever."
-                    ],
-                    paragraph: [
-                        "This photograph holds within it all the love, laughter, and joy of that precious day. It reminds us that the most beautiful moments are often the simplest ones.",
-                        "Years may pass, but the warmth of this memory will remain forever etched in our hearts. This is what true happiness looks like."
-                    ]
-                },
-                humorous: {
-                    single: [
-                        "When life gives you lemons, take a selfie!",
-                        "Proof that we clean up pretty well!",
-                        "Warning: May cause excessive smiling.",
-                        "This is our 'we're totally adults' face."
-                    ]
-                },
-                poetic: {
-                    single: [
-                        "Like golden threads woven through time's tapestry.",
-                        "In this frame, eternity whispers softly.",
-                        "Where laughter dances with the light of memory.",
-                        "A moment suspended between heartbeats."
-                    ]
-                },
-                formal: {
-                    single: [
-                        "A cherished memory from our family gathering.",
-                        "Commemorating this special occasion with gratitude.",
-                        "Celebrating the bonds that unite us.",
-                        "A testament to the joy found in togetherness."
-                    ]
-                }
-            },
-            headline: {
-                casual: {
-                    single: [
-                        "The Best Day Ever!",
-                        "Making Memories",
-                        "Good Times & Great Friends",
-                        "Life is Beautiful"
-                    ]
-                },
-                sentimental: {
-                    single: [
-                        "Moments That Matter Most",
-                        "Love, Laughter & Legacy",
-                        "Hearts Full of Gratitude",
-                        "Forever in Our Hearts"
-                    ]
-                },
-                humorous: {
-                    single: [
-                        "Squad Goals Achieved!",
-                        "Professional Fun-Havers",
-                        "Chaos & Happiness",
-                        "Warning: Extreme Cuteness Ahead"
-                    ]
-                }
-            },
-            paragraph: {
-                casual: {
-                    paragraph: [
-                        "What an incredible day this was! From the moment we woke up to the time we finally said goodbye, every minute was filled with laughter, joy, and the kind of memories that make life worth living. These are the days we'll look back on and smile.",
-                        "Sometimes the best adventures are the ones that happen right in your own backyard. This day reminded us that happiness isn't about where you are, but who you're with and how you choose to see the world around you."
-                    ]
-                },
-                sentimental: {
-                    paragraph: [
-                        "In the tapestry of our lives, days like this shine like golden threads. Every smile, every laugh, every shared glance becomes a treasure that time cannot diminish. This is what love looks like - not just in grand gestures, but in quiet moments of pure joy.",
-                        "As I look at this memory captured in time, my heart overflows with gratitude. For the people who fill our lives with meaning, for the moments that take our breath away, and for the love that binds us all together in this beautiful journey called life."
-                    ]
-                }
-            }
-        };
-
-        const typeData = suggestions[type] || suggestions.caption;
-        const toneData = typeData[tone] || typeData.casual;
-        const styleData = toneData[style] || toneData.single;
-
-        return styleData || [
-            "A beautiful moment captured in time.",
-            "Memories that will last forever.",
-            "Life's precious moments."
-        ];
-    }, []);
-
-    // Generate variations of selected suggestion
-    const generateVariations = useCallback(async (baseSuggestion: string) => {
-        setIsGeneratingAI(true);
-        try {
-            // Mock variation generation
-            const variations = [
-                baseSuggestion,
-                baseSuggestion.replace(/beautiful/gi, 'wonderful'),
-                baseSuggestion.replace(/moment/gi, 'memory'),
-                baseSuggestion + ' ✨',
-                '✨ ' + baseSuggestion
-            ].filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
-
-            setAiSuggestions(variations);
-            toast.success('Variations generated!');
-        } catch (error) {
-            console.error('Error generating variations:', error);
-            toast.error('Failed to generate variations');
-        } finally {
-            setIsGeneratingAI(false);
-        }
-    }, []);
-
     // Save custom text style
     const saveTextStyle = useCallback(() => {
         const styleName = prompt('Enter a name for this style:');
@@ -680,22 +503,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             toast.success(`Style "${styleName}" saved!`);
         }
     }, [textStyles]);
-
-    // Apply saved text style
-    const applyTextStyle = useCallback((style: any) => {
-        setTextStyles({
-            fontFamily: style.fontFamily || 'Arial',
-            fontSize: style.fontSize || 16,
-            color: style.color || '#333333',
-            fontWeight: style.fontWeight || 'normal',
-            textDecoration: style.textDecoration || 'none',
-            textAlign: style.textAlign || 'left',
-            lineHeight: style.lineHeight || 1.2,
-            letterSpacing: style.letterSpacing || 0,
-            textTransform: style.textTransform || 'none'
-        });
-        toast.success(`Style "${style.name}" applied!`);
-    }, []);
 
     // Create text element with advanced styling
     const createAdvancedTextElement = useCallback((text: string) => {
@@ -1196,22 +1003,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
     }, [pages, albumData?.bookName]);
 
-    // Handle canvas click for text placement
-    const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>, pageIndex: number) => {
-        // Only handle canvas clicks when not drawing and clicking on empty space
-        if (tool === 'draw' || e.target !== e.currentTarget) return;
-
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // Double-click to add text at cursor position
-        if (e.detail === 2) {
-            setSelectedPageIndex(pageIndex);
-            addText({ x, y });
-        }
-    }, [tool, addText]);
-
     // Fetch recent images
     const fetchRecentImages = useCallback(async () => {
         try {
@@ -1251,8 +1042,8 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
     }, [selectedElement]);
 
-    // Generate AI caption for selected image
-    const generateAICaption = useCallback(async () => {
+    // Generate AI caption for selected image with theme support
+    const generateAICaption = useCallback(async (theme?: string, style?: string, tone?: string) => {
         if (!selectedElement || selectedElement.type !== 'image') {
             toast.error('Please select an image first');
             return;
@@ -1263,14 +1054,163 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             const imageElement = selectedElement as ImageElement;
 
             // Convert image to blob for API call
-            const response = await fetch(imageElement.src);
-            const blob = await response.blob();
+            let blob: Blob | null = null;
+            
+            // Handle different image sources (base64, URL, etc.)
+            if (imageElement.src.startsWith('data:')) {
+                // Handle base64 data URLs - these work reliably
+                const response = await fetch(imageElement.src);
+                blob = await response.blob();
+            } else {
+                // For external URLs, try multiple approaches to handle CORS
+                let imageProcessed = false;
+                
+                // Method 1: Try direct fetch with CORS
+                try {
+                    const response = await fetch(imageElement.src, {
+                        mode: 'cors',
+                        credentials: 'omit',
+                        headers: {
+                            'Accept': 'image/*'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        blob = await response.blob();
+                        imageProcessed = true;
+                    }
+                } catch (fetchError) {
+                    console.log('Direct CORS fetch failed, trying proxy approach');
+                }
 
-            // Create FormData for the caption API
+                // Method 2: Try using a CORS proxy through our API
+                if (!imageProcessed) {
+                    try {
+                        const proxyResponse = await fetch('/api/image-proxy', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ imageUrl: imageElement.src })
+                        });
+
+                        if (proxyResponse.ok) {
+                            blob = await proxyResponse.blob();
+                            imageProcessed = true;
+                        }
+                    } catch (proxyError) {
+                        console.log('Proxy approach failed, trying public CORS proxy');
+                    }
+                }
+
+                // Method 2.5: Try public CORS proxy services
+                if (!imageProcessed) {
+                    const corsProxies = [
+                        'https://api.allorigins.win/raw?url=',
+                        'https://cors-anywhere.herokuapp.com/',
+                        'https://thingproxy.freeboard.io/fetch/'
+                    ];
+
+                    for (const proxy of corsProxies) {
+                        try {
+                            const proxyUrl = proxy + encodeURIComponent(imageElement.src);
+                            const response = await fetch(proxyUrl, {
+                                method: 'GET',
+                                headers: {
+                                    'Accept': 'image/*',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (response.ok) {
+                                blob = await response.blob();
+                                imageProcessed = true;
+                                console.log(`Successfully fetched image via ${proxy}`);
+                                break;
+                            }
+                        } catch (proxyError) {
+                            console.log(`CORS proxy ${proxy} failed:`, proxyError);
+                            continue;
+                        }
+                    }
+                }
+
+                // Method 3: Canvas approach with better CORS handling
+                if (!imageProcessed) {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const img = document.createElement('img');
+                        
+                        // Create a promise to handle image loading
+                        const imageLoadPromise = new Promise<Blob>((resolve, reject) => {
+                            img.onload = () => {
+                                try {
+                                    canvas.width = img.naturalWidth || img.width;
+                                    canvas.height = img.naturalHeight || img.height;
+                                    
+                                    // Clear canvas and draw image
+                                    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+                                    ctx?.drawImage(img, 0, 0);
+                                    
+                                    canvas.toBlob((canvasBlob) => {
+                                        if (canvasBlob && canvasBlob.size > 0) {
+                                            resolve(canvasBlob);
+                                        } else {
+                                            reject(new Error('Failed to convert canvas to blob'));
+                                        }
+                                    }, 'image/jpeg', 0.9);
+                                } catch (canvasError) {
+                                    reject(canvasError);
+                                }
+                            };
+                            
+                            img.onerror = (error) => {
+                                reject(new Error('Failed to load image - CORS or network error'));
+                            };
+                            
+                            // Set a timeout for image loading
+                            setTimeout(() => {
+                                reject(new Error('Image loading timeout'));
+                            }, 15000);
+                        });
+                        
+                        // Try different CORS settings
+                        img.crossOrigin = 'anonymous';
+                        
+                        // Add a small delay to ensure crossOrigin is set
+                        setTimeout(() => {
+                            img.src = imageElement.src;
+                        }, 10);
+                        
+                        blob = await imageLoadPromise;
+                        imageProcessed = true;
+                    } catch (canvasError) {
+                        console.error('Canvas approach failed:', canvasError);
+                    }
+                }
+
+                // Method 4: If all else fails, throw an error
+                if (!imageProcessed) {
+                    throw new Error('Unable to access image for caption generation. The image may be from a different domain with CORS restrictions. Try uploading the image directly to the editor.');
+                }
+            }
+
+            // Validate blob
+            if (!blob || blob.size === 0) {
+                throw new Error('Invalid image data - the image may be corrupted or inaccessible');
+            }
+
+            // Create FormData for the caption API with theme support
             const formData = new FormData();
             formData.append('file', blob, 'image.jpg');
+            
+            // Add theme, style, and tone parameters if provided
+            if (theme) formData.append('theme', theme);
+            if (style) formData.append('style', style);
+            if (tone) formData.append('tone', tone);
 
-            // Call the caption API
+            // Call the enhanced Replicate AI caption API
             const captionResponse = await fetch('/api/caption', {
                 method: 'POST',
                 body: formData,
@@ -1285,14 +1225,14 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 // Automatically add the caption as text below the image
                 const captionPosition = {
                     x: imageElement.x,
-                    y: imageElement.y + imageElement.height + 10
+                    y: Math.min(imageElement.y + imageElement.height + 10, DEFAULT_PAGE_SIZE.height - 40)
                 };
 
                 const captionElement = createTextElement(
                     captionPosition,
                     caption,
                     {
-                        width: imageElement.width,
+                        width: Math.min(imageElement.width, DEFAULT_PAGE_SIZE.width - captionPosition.x),
                         height: 30,
                         fontSize: 14,
                         color: '#333333',
@@ -1309,23 +1249,37 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             ? { ...page, elements: [...page.elements, captionElement] }
                             : page
                     ));
+                    
+                    // Select the newly created caption for immediate editing
+                    setSelectedElement(captionElement);
+                } else {
+                    console.error('Invalid caption element created:', validation.errors);
+                    toast.error('Failed to add caption to page');
                 }
             } else {
+                const errorData = await captionResponse.json().catch(() => ({}));
+                console.error('Caption API error:', errorData);
+                
+                if (captionResponse.status === 500 && errorData.error === 'API key not configured') {
+                    toast.error('AI service not configured. Please check your Replicate API key.');
+                } else {
+                    toast.error(`Failed to generate caption: ${errorData.error || 'Unknown error'}`);
+                }
+
                 // Fallback caption if API fails
                 const fallbackCaption = 'A wonderful memory captured forever.';
                 setGeneratedCaption(fallbackCaption);
 
-                // Still add the fallback caption to the page
                 const captionPosition = {
-                    x: (selectedElement as ImageElement).x,
-                    y: (selectedElement as ImageElement).y + (selectedElement as ImageElement).height + 10
+                    x: imageElement.x,
+                    y: Math.min(imageElement.y + imageElement.height + 10, DEFAULT_PAGE_SIZE.height - 40)
                 };
 
                 const captionElement = createTextElement(
                     captionPosition,
                     fallbackCaption,
                     {
-                        width: (selectedElement as ImageElement).width,
+                        width: Math.min(imageElement.width, DEFAULT_PAGE_SIZE.width - captionPosition.x),
                         height: 30,
                         fontSize: 14,
                         color: '#333333',
@@ -1342,26 +1296,41 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             ? { ...page, elements: [...page.elements, captionElement] }
                             : page
                     ));
+                    setSelectedElement(captionElement);
                 }
-
             }
         } catch (error) {
             console.error('Error generating AI caption:', error);
+            
+            let errorMessage = 'Failed to generate AI caption';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+            
+            // Show user-friendly error message
+            if (errorMessage.includes('CORS')) {
+                toast.error('Cannot access image due to security restrictions. Try uploading the image directly to the editor for AI caption generation.', {
+                    autoClose: 5000
+                });
+            } else {
+                toast.error(errorMessage);
+            }
 
-            // Fallback caption on error
+            // Always provide a fallback caption for better user experience
             const fallbackCaption = 'A precious moment in time.';
             setGeneratedCaption(fallbackCaption);
 
+            const imageElement = selectedElement as ImageElement;
             const captionPosition = {
-                x: (selectedElement as ImageElement).x,
-                y: (selectedElement as ImageElement).y + (selectedElement as ImageElement).height + 10
+                x: imageElement.x,
+                y: Math.min(imageElement.y + imageElement.height + 10, DEFAULT_PAGE_SIZE.height - 40)
             };
 
             const captionElement = createTextElement(
                 captionPosition,
                 fallbackCaption,
                 {
-                    width: (selectedElement as ImageElement).width,
+                    width: Math.min(imageElement.width, DEFAULT_PAGE_SIZE.width - captionPosition.x),
                     height: 30,
                     fontSize: 14,
                     color: '#333333',
@@ -1378,8 +1347,13 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         ? { ...page, elements: [...page.elements, captionElement] }
                         : page
                 ));
+                setSelectedElement(captionElement);
+                
+                // Inform user that a fallback caption was added
+                toast.info('Added a fallback caption. You can edit it by double-clicking the text.', {
+                    autoClose: 3000
+                });
             }
-
         } finally {
             setIsGeneratingCaption(false);
         }
@@ -1632,6 +1606,79 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
         return variations[variationIndex] || `Grid ${Math.ceil(Math.sqrt(count))}x${Math.ceil(count / Math.ceil(Math.sqrt(count)))}`;
     }, [currentLayoutIndex]);
+
+    // Apply mask to selected image
+    const applyMaskToSelectedImage = useCallback((shapeType: ShapeType) => {
+        if (!selectedElement || selectedElement.type !== 'image') {
+            toast.error('Please select an image first to apply a mask');
+            return;
+        }
+
+        const imageElement = selectedElement as ImageElement;
+        
+        // Create mask element
+        const mask = createMaskElement(
+            shapeType,
+            { x: 0, y: 0 }, // Relative to image
+            { width: imageElement.width, height: imageElement.height },
+            {
+                feather: maskFeather,
+                invert: maskInvert,
+                opacity: maskOpacity
+            }
+        );
+
+        // Apply mask to image
+        const maskedImage = applyMaskToImage(imageElement, mask);
+
+        // Update the element in the page
+        updateElement(imageElement.id, maskedImage);
+
+        toast.success(`${MASK_SHAPES[shapeType].name} mask applied to image!`);
+        setShowStickerPanel(false);
+    }, [selectedElement, maskFeather, maskInvert, maskOpacity, updateElement]);
+
+    // Remove mask from selected image
+    const removeMaskFromSelectedImage = useCallback(() => {
+        if (!selectedElement || selectedElement.type !== 'image') {
+            toast.error('Please select an image first');
+            return;
+        }
+
+        const imageElement = selectedElement as ImageElement;
+        
+        if (!imageElement.mask) {
+            toast.info('This image does not have a mask applied');
+            return;
+        }
+
+        // Remove mask from image
+        const unmaskedImage = removeMaskFromImage(imageElement);
+
+        // Update the element in the page
+        updateElement(imageElement.id, unmaskedImage);
+
+        toast.success('Mask removed from image!');
+    }, [selectedElement, updateElement]);
+
+    // Update mask properties for selected image
+    const updateSelectedImageMask = useCallback((maskUpdates: Partial<MaskElement>) => {
+        if (!selectedElement || selectedElement.type !== 'image') {
+            return;
+        }
+
+        const imageElement = selectedElement as ImageElement;
+        
+        if (!imageElement.mask) {
+            return;
+        }
+
+        // Update mask properties
+        const updatedImage = updateMask(imageElement, maskUpdates);
+
+        // Update the element in the page
+        updateElement(imageElement.id, updatedImage);
+    }, [selectedElement, updateElement]);
 
     // Get current spread pages (left and right)
     const leftPageIndex = currentSpread * 2;
@@ -2154,6 +2201,126 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Image Masks */}
+                            <div className="border-t pt-4">
+                                <h4 className="text-sm font-medium text-gray-700 mb-3">Image Masks</h4>
+                                <p className="text-xs text-gray-600 mb-3">
+                                    Select an image first, then choose a mask shape to apply
+                                </p>
+                                
+                                {/* Mask Shape Selection */}
+                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                    {Object.entries(MASK_SHAPES).map(([shapeType, shapeInfo]) => (
+                                        <button
+                                            key={shapeType}
+                                            onClick={() => applyMaskToSelectedImage(shapeType as ShapeType)}
+                                            disabled={!selectedElement || selectedElement.type !== 'image'}
+                                            className={`aspect-square bg-gray-100 rounded-lg border-2 transition-colors text-lg flex items-center justify-center ${
+                                                !selectedElement || selectedElement.type !== 'image'
+                                                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                                                    : 'border-gray-200 hover:border-blue-500 text-gray-700 cursor-pointer'
+                                            }`}
+                                            title={`Apply ${shapeInfo.name} mask`}
+                                        >
+                                            {shapeInfo.icon}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Mask Controls */}
+                                {selectedElement && selectedElement.type === 'image' && (
+                                    <div className="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <h5 className="text-sm font-medium text-blue-800">Mask Settings</h5>
+                                        
+                                        {/* Feather Control */}
+                                        <div>
+                                            <label className="block text-xs text-blue-700 mb-1">
+                                                Feather: {maskFeather}px
+                                            </label>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="20"
+                                                step="1"
+                                                value={maskFeather}
+                                                onChange={(e) => {
+                                                    const newFeather = parseInt(e.target.value);
+                                                    setMaskFeather(newFeather);
+                                                    if ((selectedElement as ImageElement).mask) {
+                                                        updateSelectedImageMask({ feather: newFeather });
+                                                    }
+                                                }}
+                                                className="w-full"
+                                            />
+                                        </div>
+
+                                        {/* Opacity Control */}
+                                        <div>
+                                            <label className="block text-xs text-blue-700 mb-1">
+                                                Opacity: {Math.round(maskOpacity * 100)}%
+                                            </label>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.1"
+                                                value={maskOpacity}
+                                                onChange={(e) => {
+                                                    const newOpacity = parseFloat(e.target.value);
+                                                    setMaskOpacity(newOpacity);
+                                                    if ((selectedElement as ImageElement).mask) {
+                                                        updateSelectedImageMask({ opacity: newOpacity });
+                                                    }
+                                                }}
+                                                className="w-full"
+                                            />
+                                        </div>
+
+                                        {/* Invert Toggle */}
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                id="mask-invert"
+                                                checked={maskInvert}
+                                                onChange={(e) => {
+                                                    const newInvert = e.target.checked;
+                                                    setMaskInvert(newInvert);
+                                                    if ((selectedElement as ImageElement).mask) {
+                                                        updateSelectedImageMask({ invert: newInvert });
+                                                    }
+                                                }}
+                                                className="rounded"
+                                            />
+                                            <label htmlFor="mask-invert" className="text-xs text-blue-700">
+                                                Invert mask
+                                            </label>
+                                        </div>
+
+                                        {/* Remove Mask Button */}
+                                        {(selectedElement as ImageElement).mask && (
+                                            <button
+                                                onClick={removeMaskFromSelectedImage}
+                                                className="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                                            >
+                                                Remove Mask
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Instructions */}
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                    <p className="text-xs text-gray-700 mb-2">💡 How to use masks:</p>
+                                    <ul className="text-xs text-gray-600 space-y-1">
+                                        <li>1. Select an image on the canvas</li>
+                                        <li>2. Choose a mask shape above</li>
+                                        <li>3. Adjust feather for soft edges</li>
+                                        <li>4. Use invert to flip the mask</li>
+                                        <li>5. Adjust opacity for transparency</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -2609,11 +2776,27 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                             }}
                                         >
                                             {element.type === 'image' ? (
-                                                <img
-                                                    src={(element as ImageElement).src}
-                                                    alt={(element as ImageElement).alt || ""}
-                                                    className="w-full h-full object-cover border border-gray-300"
-                                                />
+                                                <div className="w-full h-full relative">
+                                                    <img
+                                                        src={(element as ImageElement).src}
+                                                        alt={(element as ImageElement).alt || ""}
+                                                        className="w-full h-full object-cover border border-gray-300"
+                                                        style={{
+                                                            clipPath: (element as ImageElement).mask ? 
+                                                                `path('${generateShapePath(
+                                                                    (element as ImageElement).mask!.shape.type,
+                                                                    element.width,
+                                                                    element.height,
+                                                                    (element as ImageElement).mask!.shape.properties
+                                                                )}')` : 
+                                                                undefined,
+                                                            filter: (element as ImageElement).mask?.feather ? 
+                                                                `blur(${(element as ImageElement).mask!.feather}px)` : 
+                                                                undefined,
+                                                            opacity: (element as ImageElement).mask?.opacity || 1
+                                                        }}
+                                                    />
+                                                </div>
                                             ) : element.type === 'drawing' ? (
                                                 <svg
                                                     width="100%"
@@ -2746,11 +2929,32 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                             }}
                                         >
                                             {element.type === 'image' ? (
-                                                <img
-                                                    src={(element as ImageElement).src}
-                                                    alt={(element as ImageElement).alt || ""}
-                                                    className="w-full h-full object-cover border border-gray-300"
-                                                />
+                                                <div className="w-full h-full relative">
+                                                    <img
+                                                        src={(element as ImageElement).src}
+                                                        alt={(element as ImageElement).alt || ""}
+                                                        className="w-full h-full object-cover border border-gray-300"
+                                                        style={{
+                                                            clipPath: (element as ImageElement).mask ? 
+                                                                `path('${generateShapePath(
+                                                                    (element as ImageElement).mask!.shape.type,
+                                                                    element.width,
+                                                                    element.height,
+                                                                    (element as ImageElement).mask!.shape.properties
+                                                                )}')` : 
+                                                                undefined,
+                                                            filter: (element as ImageElement).mask?.feather ? 
+                                                                `blur(${(element as ImageElement).mask!.feather}px)` : 
+                                                                undefined,
+                                                            opacity: (element as ImageElement).mask?.opacity || 1
+                                                        }}
+                                                    />
+                                                    {(element as ImageElement).mask && (
+                                                        <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
+                                                            {MASK_SHAPES[(element as ImageElement).mask!.shape.type].icon}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : element.type === 'drawing' ? (
                                                 <svg
                                                     width="100%"
@@ -2854,6 +3058,32 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         Generate an AI caption for this image and add it to your page.
                                     </p>
 
+                                    {/* Theme Selection */}
+                                    <div className="mb-4">
+                                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                                            Choose a theme (optional):
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-1 text-xs">
+                                            {[
+                                                { key: 'family-gathering', label: '👨‍👩‍👧‍👦 Family', color: 'bg-red-50 text-red-700 border-red-200' },
+                                                { key: 'birthday', label: '🎂 Birthday', color: 'bg-pink-50 text-pink-700 border-pink-200' },
+                                                { key: 'wedding', label: '💒 Wedding', color: 'bg-rose-50 text-rose-700 border-rose-200' },
+                                                { key: 'vacation', label: '🏖️ Vacation', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                                                { key: 'baby', label: '👶 Baby', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+                                                { key: 'pets', label: '🐕 Pets', color: 'bg-green-50 text-green-700 border-green-200' }
+                                            ].map((theme) => (
+                                                <button
+                                                    key={theme.key}
+                                                    onClick={() => generateAICaption(theme.key, 'descriptive', 'warm')}
+                                                    disabled={isGeneratingCaption}
+                                                    className={`px-2 py-1 rounded border text-xs transition-colors hover:opacity-80 ${theme.color} ${isGeneratingCaption ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                >
+                                                    {theme.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     {generatedCaption && (
                                         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                             <p className="text-sm text-blue-800 font-medium mb-1">Generated Caption:</p>
@@ -2863,7 +3093,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={generateAICaption}
+                                            onClick={() => generateAICaption()}
                                             disabled={isGeneratingCaption}
                                             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${isGeneratingCaption
                                                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -2880,7 +3110,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                                     </svg>
-                                                    Generate Caption
+                                                    Auto Caption
                                                 </>
                                             )}
                                         </button>
@@ -2894,6 +3124,16 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
+                                    </div>
+
+                                    {/* Tips */}
+                                    <div className="mt-3 p-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
+                                        <p className="font-medium mb-1">💡 Tips:</p>
+                                        <ul className="space-y-0.5">
+                                            <li>• Click a theme for contextual captions</li>
+                                            <li>• Use "Auto Caption" for general descriptions</li>
+                                            <li>• Double-click generated text to edit</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>

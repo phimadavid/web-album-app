@@ -38,6 +38,11 @@ module.exports = {
             type: Sequelize.STRING(15),
             allowNull: false,
          },
+         pages: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            defaultValue: 24,
+         },
          createdAt: {
             type: Sequelize.DATE,
             allowNull: false,

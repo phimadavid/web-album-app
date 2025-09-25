@@ -5,7 +5,7 @@ module.exports = {
    async up(queryInterface, Sequelize) {
       await queryInterface.addColumn("Albums", "userId", {
          type: Sequelize.INTEGER,
-         allowNull: true, // Allow null initially for existing records
+         allowNull: true,
          references: {
             model: "Users",
             key: "id",
