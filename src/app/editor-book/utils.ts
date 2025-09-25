@@ -13,7 +13,6 @@ import {
    Bounds,
    ElementType,
    MaskElement,
-   MaskType,
    ShapeType,
    ShapeProperties,
 } from "./types";
