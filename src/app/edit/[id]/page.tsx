@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Image, Type, Palette, Download, Save, Grid, Layers, Move, RotateCcw, Trash2, Upload, Pen, Sticker, ArrowLeft, Eye, BookOpen, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Image, Type, Palette, Download, Save, Grid, Layers, Move, RotateCcw, Trash2, Upload, Pen, Sticker, ArrowLeft, Eye, BookOpen, X, Sparkles } from 'lucide-react';
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { ThreeDots } from "react-loader-spinner";
@@ -30,7 +30,6 @@ import {
     createImageElement,
     createTextElement,
     createDrawingElement,
-    createStickerElement,
     createDrawingPath,
     generateElementId,
     validateElement,
@@ -75,6 +74,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const [showDrawPanel, setShowDrawPanel] = useState<boolean>(false);
     const [showStickerPanel, setShowStickerPanel] = useState<boolean>(false);
     const [showBackgroundPanel, setShowBackgroundPanel] = useState<boolean>(false);
+    const [showAIToolsPanel, setShowAIToolsPanel] = useState<boolean>(false);
     const [isDrawing, setIsDrawing] = useState<boolean>(false);
     const [currentDrawingPath, setCurrentDrawingPath] = useState<DrawingPath | null>(null);
     const [drawingColor, setDrawingColor] = useState<string>('#000000');
@@ -263,7 +263,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
     ];
 
-    // Generate AI background
+    // Generate AI background using the existing template generation API
     const generateAIBackground = useCallback(async () => {
         if (!aiPrompt.trim()) {
             toast.error('Please enter a description for the background');
@@ -272,40 +272,51 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
         setIsGeneratingBackground(true);
         try {
-            // Mock AI generation - replace with actual AI service call
-            const response = await fetch('/api/generate/background', {
+            // Use the existing template generation API
+            const response = await fetch('/api/generate/template', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    prompt: aiPrompt,
-                    intensity: backgroundIntensity,
-                    dimensions: { width: 800, height: 600 }
+                    promptWord: aiPrompt
                 }),
             });
 
             if (response.ok) {
                 const data = await response.json();
-                const backgroundUrl = data.imageUrl;
 
-                // Apply the generated background
-                applyBackgroundImage(backgroundUrl);
+                if (data.error) {
+                    throw new Error(data.error);
+                }
 
-                toast.success('AI background generated successfully!');
-                setAiPrompt('');
+                if (data.image) {
+                    // Apply the generated background
+                    applyBackgroundImage(data.image);
+                    setAiPrompt('');
+                } else {
+                    throw new Error('No image generated');
+                }
             } else {
-                // Fallback to a placeholder for demo
-                const placeholderUrl = `https://via.placeholder.com/800x600/4f46e5/ffffff?text=${encodeURIComponent(aiPrompt)}`;
-                applyBackgroundImage(placeholderUrl);
-                toast.info('Using placeholder - AI service not available');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
             }
         } catch (error) {
             console.error('Error generating AI background:', error);
-            // Fallback to a placeholder
-            const placeholderUrl = `https://via.placeholder.com/800x600/4f46e5/ffffff?text=${encodeURIComponent(aiPrompt)}`;
-            applyBackgroundImage(placeholderUrl);
-            toast.info('Using placeholder - AI service not available');
+
+            let errorMessage = 'Failed to generate AI background';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            // Show specific error messages
+            if (errorMessage.includes('API key')) {
+                toast.error('AI service not configured. Please check your Replicate API key.');
+            } else if (errorMessage.includes('quota') || errorMessage.includes('limit')) {
+                toast.error('AI service quota exceeded. Please try again later.');
+            } else {
+                toast.error(`Failed to generate background: ${errorMessage}`);
+            }
         } finally {
             setIsGeneratingBackground(false);
         }
@@ -319,18 +330,21 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
         setPages(prevPages => prevPages.map((page, index) => {
             if (targetPages.includes(index)) {
+                // Handle both base64 data URLs and regular URLs
+                const backgroundStyle = imageUrl.startsWith('data:')
+                    ? `linear-gradient(rgba(255,255,255,${1 - backgroundIntensity}), rgba(255,255,255,${1 - backgroundIntensity})), url("${imageUrl}")`
+                    : `linear-gradient(rgba(255,255,255,${1 - backgroundIntensity}), rgba(255,255,255,${1 - backgroundIntensity})), url(${imageUrl})`;
+
                 return {
                     ...page,
-                    background: `linear-gradient(rgba(255,255,255,${1 - backgroundIntensity}), rgba(255,255,255,${1 - backgroundIntensity})), url(${imageUrl})`,
+                    background: backgroundStyle,
                     backgroundImage: imageUrl,
                     backgroundIntensity: backgroundIntensity
                 };
             }
             return page;
         }));
-
         const scopeText = backgroundScope === 'all' ? 'all pages' : `page ${selectedPageIndex + 1}`;
-        toast.success(`Background applied to ${scopeText}!`);
     }, [backgroundScope, selectedPageIndex, pages.length, backgroundIntensity]);
 
     // Templates with proper typing
@@ -1032,14 +1046,11 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
     }, [showImagePanel, recentImages.length, loadingRecentImages, fetchRecentImages]);
 
-    // Show caption button when image is selected
+    // Show caption button when image is selected - DISABLED
     useEffect(() => {
-        if (selectedElement && selectedElement.type === 'image') {
-            setShowCaptionButton(true);
-        } else {
-            setShowCaptionButton(false);
-            setGeneratedCaption('');
-        }
+        // Disabled: No longer show caption button modal when image is selected
+        setShowCaptionButton(false);
+        setGeneratedCaption('');
     }, [selectedElement]);
 
     // Generate AI caption for selected image with theme support
@@ -1055,7 +1066,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
             // Convert image to blob for API call
             let blob: Blob | null = null;
-            
+
             // Handle different image sources (base64, URL, etc.)
             if (imageElement.src.startsWith('data:')) {
                 // Handle base64 data URLs - these work reliably
@@ -1064,7 +1075,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             } else {
                 // For external URLs, try multiple approaches to handle CORS
                 let imageProcessed = false;
-                
+
                 // Method 1: Try direct fetch with CORS
                 try {
                     const response = await fetch(imageElement.src, {
@@ -1074,7 +1085,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             'Accept': 'image/*'
                         }
                     });
-                    
+
                     if (response.ok) {
                         blob = await response.blob();
                         imageProcessed = true;
@@ -1141,18 +1152,18 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
                         const img = document.createElement('img');
-                        
+
                         // Create a promise to handle image loading
                         const imageLoadPromise = new Promise<Blob>((resolve, reject) => {
                             img.onload = () => {
                                 try {
                                     canvas.width = img.naturalWidth || img.width;
                                     canvas.height = img.naturalHeight || img.height;
-                                    
+
                                     // Clear canvas and draw image
                                     ctx?.clearRect(0, 0, canvas.width, canvas.height);
                                     ctx?.drawImage(img, 0, 0);
-                                    
+
                                     canvas.toBlob((canvasBlob) => {
                                         if (canvasBlob && canvasBlob.size > 0) {
                                             resolve(canvasBlob);
@@ -1164,25 +1175,25 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                     reject(canvasError);
                                 }
                             };
-                            
+
                             img.onerror = (error) => {
                                 reject(new Error('Failed to load image - CORS or network error'));
                             };
-                            
+
                             // Set a timeout for image loading
                             setTimeout(() => {
                                 reject(new Error('Image loading timeout'));
                             }, 15000);
                         });
-                        
+
                         // Try different CORS settings
                         img.crossOrigin = 'anonymous';
-                        
+
                         // Add a small delay to ensure crossOrigin is set
                         setTimeout(() => {
                             img.src = imageElement.src;
                         }, 10);
-                        
+
                         blob = await imageLoadPromise;
                         imageProcessed = true;
                     } catch (canvasError) {
@@ -1204,7 +1215,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             // Create FormData for the caption API with theme support
             const formData = new FormData();
             formData.append('file', blob, 'image.jpg');
-            
+
             // Add theme, style, and tone parameters if provided
             if (theme) formData.append('theme', theme);
             if (style) formData.append('style', style);
@@ -1249,7 +1260,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             ? { ...page, elements: [...page.elements, captionElement] }
                             : page
                     ));
-                    
+
                     // Select the newly created caption for immediate editing
                     setSelectedElement(captionElement);
                 } else {
@@ -1259,7 +1270,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             } else {
                 const errorData = await captionResponse.json().catch(() => ({}));
                 console.error('Caption API error:', errorData);
-                
+
                 if (captionResponse.status === 500 && errorData.error === 'API key not configured') {
                     toast.error('AI service not configured. Please check your Replicate API key.');
                 } else {
@@ -1301,12 +1312,12 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             }
         } catch (error) {
             console.error('Error generating AI caption:', error);
-            
+
             let errorMessage = 'Failed to generate AI caption';
             if (error instanceof Error) {
                 errorMessage = error.message;
             }
-            
+
             // Show user-friendly error message
             if (errorMessage.includes('CORS')) {
                 toast.error('Cannot access image due to security restrictions. Try uploading the image directly to the editor for AI caption generation.', {
@@ -1348,7 +1359,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         : page
                 ));
                 setSelectedElement(captionElement);
-                
+
                 // Inform user that a fallback caption was added
                 toast.info('Added a fallback caption. You can edit it by double-clicking the text.', {
                     autoClose: 3000
@@ -1615,7 +1626,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
 
         const imageElement = selectedElement as ImageElement;
-        
+
         // Create mask element
         const mask = createMaskElement(
             shapeType,
@@ -1646,7 +1657,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
 
         const imageElement = selectedElement as ImageElement;
-        
+
         if (!imageElement.mask) {
             toast.info('This image does not have a mask applied');
             return;
@@ -1668,7 +1679,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
 
         const imageElement = selectedElement as ImageElement;
-        
+
         if (!imageElement.mask) {
             return;
         }
@@ -1882,17 +1893,18 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                     </button>
                     <button
                         onClick={() => {
-                            setShowBackgroundPanel(!showBackgroundPanel);
+                            setShowAIToolsPanel(!showAIToolsPanel);
                             setShowImagePanel(false);
                             setShowDrawPanel(false);
                             setShowStickerPanel(false);
                             setShowTemplates(false);
                             setShowAdvancedTextPanel(false);
+                            setShowBackgroundPanel(false);
                         }}
-                        className={`p-3 rounded-lg transition-colors ${showBackgroundPanel ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
-                        title="Background Colors"
+                        className={`p-3 rounded-lg transition-colors ${showAIToolsPanel ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                        title="AI Tools"
                     >
-                        <Palette className="w-5 h-5" />
+                        <Sparkles className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -2208,7 +2220,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                 <p className="text-xs text-gray-600 mb-3">
                                     Select an image first, then choose a mask shape to apply
                                 </p>
-                                
+
                                 {/* Mask Shape Selection */}
                                 <div className="grid grid-cols-3 gap-2 mb-4">
                                     {Object.entries(MASK_SHAPES).map(([shapeType, shapeInfo]) => (
@@ -2216,11 +2228,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                             key={shapeType}
                                             onClick={() => applyMaskToSelectedImage(shapeType as ShapeType)}
                                             disabled={!selectedElement || selectedElement.type !== 'image'}
-                                            className={`aspect-square bg-gray-100 rounded-lg border-2 transition-colors text-lg flex items-center justify-center ${
-                                                !selectedElement || selectedElement.type !== 'image'
+                                            className={`aspect-square bg-gray-100 rounded-lg border-2 transition-colors text-lg flex items-center justify-center ${!selectedElement || selectedElement.type !== 'image'
                                                     ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                                                     : 'border-gray-200 hover:border-blue-500 text-gray-700 cursor-pointer'
-                                            }`}
+                                                }`}
                                             title={`Apply ${shapeInfo.name} mask`}
                                         >
                                             {shapeInfo.icon}
@@ -2232,7 +2243,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                 {selectedElement && selectedElement.type === 'image' && (
                                     <div className="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                         <h5 className="text-sm font-medium text-blue-800">Mask Settings</h5>
-                                        
+
                                         {/* Feather Control */}
                                         <div>
                                             <label className="block text-xs text-blue-700 mb-1">
@@ -2383,290 +2394,205 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                     </div>
                 )}
 
-                {/* Automatic Backgrounds Panel */}
-                {showBackgroundPanel && (
+                {/* AI Tools Panel */}
+                {showAIToolsPanel && (
                     <div className="w-80 bg-white border-r p-4 h-full overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold">Automatic Backgrounds</h3>
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                                    <Sparkles className="w-4 h-4 text-white" />
+                                </div>
+                                <h3 className="font-semibold">AI Tools</h3>
+                            </div>
                             <button
-                                onClick={() => setShowBackgroundPanel(false)}
+                                onClick={() => setShowAIToolsPanel(false)}
                                 className="text-gray-400 hover:text-gray-600 transition-colors"
-                                title="Close Backgrounds"
+                                title="Close AI Tools"
                             >
                                 ×
                             </button>
                         </div>
 
-                        {/* Scope Control */}
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Apply to:</label>
-                            <div className="flex bg-gray-100 rounded-lg p-1">
-                                <button
-                                    onClick={() => setBackgroundScope('current')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundScope === 'current'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    Current Page
-                                </button>
-                                <button
-                                    onClick={() => setBackgroundScope('all')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundScope === 'all'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    All Pages
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Background Mode Tabs */}
-                        <div className="mb-4">
-                            <div className="flex bg-gray-100 rounded-lg p-1">
-                                <button
-                                    onClick={() => setBackgroundMode('color')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundMode === 'color'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    Colors
-                                </button>
-                                <button
-                                    onClick={() => setBackgroundMode('library')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundMode === 'library'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    Library
-                                </button>
-                                <button
-                                    onClick={() => setBackgroundMode('ai')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm transition-colors ${backgroundMode === 'ai'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    AI-Generated
-                                </button>
-                            </div>
-                        </div>
-
                         <div className="space-y-4">
-                            {/* Color Mode */}
-                            {backgroundMode === 'color' && (
-                                <>
-                                    {/* Custom Color Picker */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-3">
-                                            Custom Background Color
-                                        </label>
-                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                                            <Palette className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                                            <p className="text-sm text-gray-600 mb-3">Choose any color for your page background</p>
-                                            <input
-                                                type="color"
-                                                onChange={(e) => {
-                                                    const selectedColor = e.target.value;
-                                                    changeBackground(selectedColor);
-                                                }}
-                                                className="w-full h-12 border border-gray-300 rounded-lg cursor-pointer"
-                                                title="Click to select a custom color"
-                                            />
-                                        </div>
-                                    </div>
+                            {/* AI Layout Generator */}
+                            <div className="border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                                <button
+                                    onClick={generateAILayout}
+                                    disabled={isGeneratingLayout}
+                                    className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${isGeneratingLayout
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600'
+                                        }`}
+                                >
+                                    {isGeneratingLayout ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Grid className="w-4 h-4" />
+                                            Generate Layout
+                                        </>
+                                    )}
+                                </button>
+                            </div>
 
-                                    {/* Preset Colors */}
-                                    <div className="border-t pt-4">
-                                        <h4 className="text-sm font-medium text-gray-700 mb-3">Preset Colors</h4>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {[
-                                                { color: '#ffffff', name: 'White' },
-                                                { color: '#f8f9fa', name: 'Light Gray' },
-                                                { color: '#e9ecef', name: 'Gray' },
-                                                { color: '#dee2e6', name: 'Medium Gray' },
-                                                { color: '#ced4da', name: 'Dark Gray' },
-                                                { color: '#adb5bd', name: 'Darker Gray' },
-                                                { color: '#fef2f2', name: 'Light Pink' },
-                                                { color: '#fef3c7', name: 'Light Yellow' },
-                                                { color: '#ecfdf5', name: 'Light Green' },
-                                                { color: '#eff6ff', name: 'Light Blue' },
-                                                { color: '#f3e8ff', name: 'Light Purple' },
-                                                { color: '#fdf4ff', name: 'Light Magenta' }
-                                            ].map((preset, index) => (
-                                                <button
-                                                    key={index}
-                                                    onClick={() => {
-                                                        changeBackground(preset.color);
-                                                    }}
-                                                    className="aspect-square rounded-lg border-2 border-gray-200 hover:border-blue-500 transition-colors relative group"
-                                                    style={{ backgroundColor: preset.color }}
-                                                    title={`${preset.name} (${preset.color})`}
-                                                >
-                                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all"></div>
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        {preset.name}
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Library Mode */}
-                            {backgroundMode === 'library' && (
-                                <div>
-                                    <h4 className="text-sm font-medium text-gray-700 mb-3">Predefined Library</h4>
-                                    <div className="space-y-4">
-                                        {/* Background Intensity Slider */}
+                            {/* AI Caption Generator */}
+                            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                {selectedElement && selectedElement.type === 'image' ? (
+                                    <div className="space-y-3">
+                                        {/* Theme Selection */}
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Background Intensity: {Math.round(backgroundIntensity * 100)}%
+                                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                                                Choose theme (optional):
                                             </label>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="1"
-                                                step="0.1"
-                                                value={backgroundIntensity}
-                                                onChange={(e) => setBackgroundIntensity(parseFloat(e.target.value))}
-                                                className="w-full"
-                                            />
-                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                                <span>Subtle</span>
-                                                <span>Full</span>
+                                            <div className="grid grid-cols-2 gap-1 text-xs">
+                                                {[
+                                                    { key: 'family-gathering', label: '👨‍👩‍👧‍👦 Family', color: 'bg-red-50 text-red-700 border-red-200' },
+                                                    { key: 'birthday', label: '🎂 Birthday', color: 'bg-pink-50 text-pink-700 border-pink-200' },
+                                                    { key: 'wedding', label: '💒 Wedding', color: 'bg-rose-50 text-rose-700 border-rose-200' },
+                                                    { key: 'vacation', label: '🏖️ Vacation', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                                                    { key: 'baby', label: '👶 Baby', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+                                                    { key: 'pets', label: '🐕 Pets', color: 'bg-green-50 text-green-700 border-green-200' }
+                                                ].map((theme) => (
+                                                    <button
+                                                        key={theme.key}
+                                                        onClick={() => generateAICaption(theme.key, 'descriptive', 'warm')}
+                                                        disabled={isGeneratingCaption}
+                                                        className={`px-2 py-1 rounded border text-xs transition-colors hover:opacity-80 ${theme.color} ${isGeneratingCaption ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                    >
+                                                        {theme.label}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
 
-                                        {/* Background Library Grid */}
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {backgroundLibrary.map((bg) => (
-                                                <button
-                                                    key={bg.id}
-                                                    onClick={() => {
-                                                        setSelectedLibraryBackground(bg.id);
-                                                        applyBackgroundImage(bg.url);
-                                                    }}
-                                                    className={`aspect-video bg-gray-200 rounded-lg border-2 transition-colors overflow-hidden group relative ${selectedLibraryBackground === bg.id
-                                                        ? 'border-blue-500'
-                                                        : 'border-gray-200 hover:border-blue-300'
-                                                        }`}
-                                                >
-                                                    <img
-                                                        src={bg.url}
-                                                        alt={bg.name}
-                                                        className="w-full h-full object-cover"
-                                                        onError={(e) => {
-                                                            e.currentTarget.src = `https://via.placeholder.com/300x200/e2e8f0/64748b?text=${encodeURIComponent(bg.name)}`;
-                                                        }}
-                                                    />
-                                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-end">
-                                                        <div className="w-full p-2 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <p className="font-medium">{bg.name}</p>
-                                                            <p className="text-gray-300">{bg.category}</p>
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* AI Generation Mode */}
-                            {backgroundMode === 'ai' && (
-                                <div>
-                                    <h4 className="text-sm font-medium text-gray-700 mb-3">AI-Generated Backgrounds</h4>
-                                    <div className="space-y-4">
-                                        {/* AI Prompt Input */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Describe your desired background:
-                                            </label>
-                                            <textarea
-                                                value={aiPrompt}
-                                                onChange={(e) => setAiPrompt(e.target.value)}
-                                                placeholder="e.g., 'Sunset over mountains with warm colors' or 'Abstract geometric pattern in blue tones'"
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                                rows={3}
-                                            />
-                                        </div>
-
-                                        {/* Background Intensity Slider */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Background Intensity: {Math.round(backgroundIntensity * 100)}%
-                                            </label>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="1"
-                                                step="0.1"
-                                                value={backgroundIntensity}
-                                                onChange={(e) => setBackgroundIntensity(parseFloat(e.target.value))}
-                                                className="w-full"
-                                            />
-                                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                                <span>Subtle</span>
-                                                <span>Full</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Generate Button */}
                                         <button
-                                            onClick={generateAIBackground}
-                                            disabled={isGeneratingBackground || !aiPrompt.trim()}
-                                            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${isGeneratingBackground || !aiPrompt.trim()
+                                            onClick={() => generateAICaption()}
+                                            disabled={isGeneratingCaption}
+                                            className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${isGeneratingCaption
                                                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
                                                 }`}
                                         >
-                                            {isGeneratingBackground ? (
+                                            {isGeneratingCaption ? (
                                                 <>
                                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                                     Generating...
                                                 </>
                                             ) : (
                                                 <>
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                                    </svg>
-                                                    Generate Background
+                                                    <Type className="w-4 h-4" />
+                                                    Generate Caption
                                                 </>
                                             )}
                                         </button>
+                                    </div>
+                                ) : (
+                                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                                        <div className="text-gray-400 mb-2">
+                                            <Image className="w-8 h-8 mx-auto" />
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-1">No image selected</p>
+                                        <p className="text-xs text-gray-500">Select an image on the canvas to generate captions</p>
+                                    </div>
+                                )}
+                            </div>
 
-                                        {/* AI Tips */}
-                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                            <p className="text-sm text-blue-800 mb-2">💡 AI Generation Tips:</p>
-                                            <ul className="text-xs text-blue-700 space-y-1">
-                                                <li>• Be specific about colors, mood, and style</li>
-                                                <li>• Mention if you want abstract or realistic</li>
-                                                <li>• Include lighting preferences (bright, soft, dramatic)</li>
-                                                <li>• Try: "Watercolor sunset", "Minimalist geometric", "Vintage paper texture"</li>
-                                            </ul>
+                            {/* AI Background Generator */}
+                            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Describe your background:
+                                        </label>
+                                        <textarea
+                                            value={aiPrompt}
+                                            onChange={(e) => setAiPrompt(e.target.value)}
+                                            placeholder="e.g., 'Sunset over mountains' or 'Abstract geometric pattern'"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                                            rows={2}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Intensity: {Math.round(backgroundIntensity * 100)}%
+                                        </label>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="1"
+                                            step="0.1"
+                                            value={backgroundIntensity}
+                                            onChange={(e) => setBackgroundIntensity(parseFloat(e.target.value))}
+                                            className="w-full"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Apply to:</label>
+                                        <div className="flex bg-gray-100 rounded-lg p-1">
+                                            <button
+                                                onClick={() => setBackgroundScope('current')}
+                                                className={`flex-1 px-2 py-1 rounded-md text-xs transition-colors ${backgroundScope === 'current'
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                                    }`}
+                                            >
+                                                Current
+                                            </button>
+                                            <button
+                                                onClick={() => setBackgroundScope('all')}
+                                                className={`flex-1 px-2 py-1 rounded-md text-xs transition-colors ${backgroundScope === 'all'
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                                    }`}
+                                            >
+                                                All Pages
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                            )}
 
-                            {/* Current Settings Info */}
-                            <div className="border-t pt-4">
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                    <p className="text-sm text-gray-800 mb-2">Current Settings:</p>
-                                    <ul className="text-xs text-gray-600 space-y-1">
-                                        <li>• Target: {backgroundScope === 'all' ? 'All Pages' : `Page ${selectedPageIndex + 1}`}</li>
-                                        <li>• Mode: {backgroundMode === 'color' ? 'Solid Colors' : backgroundMode === 'library' ? 'Predefined Library' : 'AI-Generated'}</li>
-                                        {(backgroundMode === 'library' || backgroundMode === 'ai') && (
-                                            <li>• Intensity: {Math.round(backgroundIntensity * 100)}%</li>
+                                    <button
+                                        onClick={generateAIBackground}
+                                        disabled={isGeneratingBackground || !aiPrompt.trim()}
+                                        className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${isGeneratingBackground || !aiPrompt.trim()
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600'
+                                            }`}
+                                    >
+                                        {isGeneratingBackground ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Palette className="w-4 h-4" />
+                                                Generate Background
+                                            </>
                                         )}
-                                    </ul>
+                                    </button>
                                 </div>
                             </div>
+
+                            {/* AI Tools Status */}
+                            {/* <div className="border-t pt-4">
+                                <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Sparkles className="w-4 h-4 text-purple-600" />
+                                        <p className="text-sm font-medium text-purple-800">AI Tools Status</p>
+                                    </div>
+                                    <ul className="text-xs text-purple-700 space-y-1">
+                                        <li>• Current Page: {selectedPageIndex + 1}</li>
+                                        <li>• Images on page: {pages[selectedPageIndex]?.elements.filter(el => el.type === 'image').length || 0}</li>
+                                        <li>• Selected: {selectedElement ? `${selectedElement.type} element` : 'None'}</li>
+                                        <li>• AI Services: {isGeneratingCaption || isGeneratingLayout || isGeneratingBackground ? 'Active' : 'Ready'}</li>
+                                    </ul>
+                                </div>
+                            </div> */}
                         </div>
                     </div>
                 )}
@@ -2714,7 +2640,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                     style={{
                                         width: `${leftPage.width}px`,
                                         height: `${leftPage.height}px`,
-                                        backgroundColor: leftPage.background
+                                        background: leftPage.background || '#ffffff',
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        backgroundRepeat: 'no-repeat'
                                     }}
                                     onDragOver={handleDragOver}
                                     onDrop={(e) => {
@@ -2728,18 +2657,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         if (e.target === e.currentTarget) {
                                             setSelectedPageIndex(leftPageIndex);
                                             setSelectedElement(null);
-
-                                            // Show layout button when clicking on empty page area
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const x = e.clientX - rect.left;
-                                            const y = e.clientY - rect.top;
-                                            setLayoutButtonPosition({ x, y });
-                                            setShowLayoutButton(true);
-
-                                            // Hide layout button after 5 seconds
-                                            setTimeout(() => {
-                                                setShowLayoutButton(false);
-                                            }, 5000);
                                         }
                                     }}
                                 >
@@ -2782,16 +2699,16 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                         alt={(element as ImageElement).alt || ""}
                                                         className="w-full h-full object-cover border border-gray-300"
                                                         style={{
-                                                            clipPath: (element as ImageElement).mask ? 
+                                                            clipPath: (element as ImageElement).mask ?
                                                                 `path('${generateShapePath(
                                                                     (element as ImageElement).mask!.shape.type,
                                                                     element.width,
                                                                     element.height,
                                                                     (element as ImageElement).mask!.shape.properties
-                                                                )}')` : 
+                                                                )}')` :
                                                                 undefined,
-                                                            filter: (element as ImageElement).mask?.feather ? 
-                                                                `blur(${(element as ImageElement).mask!.feather}px)` : 
+                                                            filter: (element as ImageElement).mask?.feather ?
+                                                                `blur(${(element as ImageElement).mask!.feather}px)` :
                                                                 undefined,
                                                             opacity: (element as ImageElement).mask?.opacity || 1
                                                         }}
@@ -2868,7 +2785,10 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                     style={{
                                         width: `${rightPage.width}px`,
                                         height: `${rightPage.height}px`,
-                                        backgroundColor: rightPage.background
+                                        background: rightPage.background || '#ffffff',
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        backgroundRepeat: 'no-repeat'
                                     }}
                                     onDragOver={handleDragOver}
                                     onDrop={(e) => {
@@ -2882,18 +2802,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         if (e.target === e.currentTarget) {
                                             setSelectedPageIndex(rightPageIndex);
                                             setSelectedElement(null);
-
-                                            // Show layout button when clicking on empty page area
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const x = e.clientX - rect.left;
-                                            const y = e.clientY - rect.top;
-                                            setLayoutButtonPosition({ x, y });
-                                            setShowLayoutButton(true);
-
-                                            // Hide layout button after 5 seconds
-                                            setTimeout(() => {
-                                                setShowLayoutButton(false);
-                                            }, 5000);
                                         }
                                     }}
                                 >
@@ -2935,16 +2843,16 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                         alt={(element as ImageElement).alt || ""}
                                                         className="w-full h-full object-cover border border-gray-300"
                                                         style={{
-                                                            clipPath: (element as ImageElement).mask ? 
+                                                            clipPath: (element as ImageElement).mask ?
                                                                 `path('${generateShapePath(
                                                                     (element as ImageElement).mask!.shape.type,
                                                                     element.width,
                                                                     element.height,
                                                                     (element as ImageElement).mask!.shape.properties
-                                                                )}')` : 
+                                                                )}')` :
                                                                 undefined,
-                                                            filter: (element as ImageElement).mask?.feather ? 
-                                                                `blur(${(element as ImageElement).mask!.feather}px)` : 
+                                                            filter: (element as ImageElement).mask?.feather ?
+                                                                `blur(${(element as ImageElement).mask!.feather}px)` :
                                                                 undefined,
                                                             opacity: (element as ImageElement).mask?.opacity || 1
                                                         }}
