@@ -1857,6 +1857,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             setShowTemplates(false);
                             setShowBackgroundPanel(false);
                             setShowAdvancedTextPanel(false);
+                            setShowAIToolsPanel(false);
                         }}
                         className={`p-3 rounded-lg transition-colors ${showImagePanel ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
                         title="Add Image"
@@ -1871,6 +1872,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             setShowStickerPanel(false);
                             setShowTemplates(false);
                             setShowBackgroundPanel(false);
+                            setShowAIToolsPanel(false);
                         }}
                         className={`p-3 rounded-lg transition-colors ${showAdvancedTextPanel ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
                         title="Add Text (Ctrl+L)"
@@ -1885,6 +1887,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             setShowTemplates(false);
                             setShowBackgroundPanel(false);
                             setShowAdvancedTextPanel(false);
+                            setShowAIToolsPanel(false);
                         }}
                         className={`p-3 rounded-lg transition-colors ${showStickerPanel ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}
                         title="Add Sticker"
@@ -2229,8 +2232,8 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                             onClick={() => applyMaskToSelectedImage(shapeType as ShapeType)}
                                             disabled={!selectedElement || selectedElement.type !== 'image'}
                                             className={`aspect-square bg-gray-100 rounded-lg border-2 transition-colors text-lg flex items-center justify-center ${!selectedElement || selectedElement.type !== 'image'
-                                                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                                                    : 'border-gray-200 hover:border-blue-500 text-gray-700 cursor-pointer'
+                                                ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                                                : 'border-gray-200 hover:border-blue-500 text-gray-700 cursor-pointer'
                                                 }`}
                                             title={`Apply ${shapeInfo.name} mask`}
                                         >
@@ -2439,9 +2442,29 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             </div>
 
                             {/* AI Caption Generator */}
-                            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                            <div className="rounded-lg transition-colors">
                                 {selectedElement && selectedElement.type === 'image' ? (
                                     <div className="space-y-3">
+                                        <button
+                                            onClick={() => generateAICaption()}
+                                            disabled={isGeneratingCaption}
+                                            className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${isGeneratingCaption
+                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
+                                                }`}
+                                        >
+                                            {isGeneratingCaption ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Generating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Type className="w-4 h-4" />
+                                                    Generate Caption
+                                                </>
+                                            )}
+                                        </button>
                                         {/* Theme Selection */}
                                         <div>
                                             <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -2467,27 +2490,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                 ))}
                                             </div>
                                         </div>
-
-                                        <button
-                                            onClick={() => generateAICaption()}
-                                            disabled={isGeneratingCaption}
-                                            className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm ${isGeneratingCaption
-                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
-                                                }`}
-                                        >
-                                            {isGeneratingCaption ? (
-                                                <>
-                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                    Generating...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Type className="w-4 h-4" />
-                                                    Generate Caption
-                                                </>
-                                            )}
-                                        </button>
                                     </div>
                                 ) : (
                                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
@@ -2641,7 +2643,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         width: `${leftPage.width}px`,
                                         height: `${leftPage.height}px`,
                                         background: leftPage.background || '#ffffff',
-                                        backgroundSize: 'cover',
+                                        backgroundSize: 'contain',
                                         backgroundPosition: 'center',
                                         backgroundRepeat: 'no-repeat'
                                     }}
