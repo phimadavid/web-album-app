@@ -25,6 +25,8 @@ import {
     MASK_SHAPES
 } from '../../editor-book/types';
 
+import { MaskIcons } from '../../editor-book/mask-icons';
+
 // Import utility functions
 import {
     createImageElement,
@@ -55,6 +57,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const [isConverting, setIsConverting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [templateBackground, setTemplateBackground] = useState<string | null>(null);
 
     // Editor states
     const [currentSpread, setCurrentSpread] = useState<number>(0);
@@ -138,12 +141,13 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     } = useAlbumData(params.id);
 
     // Convert album images to editor pages
-    const convertAlbumToEditorPages = useCallback((albumData: AlbumDataProps): Page[] => {
+    const convertAlbumToEditorPages = useCallback((albumData: AlbumDataProps, backgroundImage?: string | null): Page[] => {
         if (!albumData?.images || albumData.images.length === 0) {
             // Return default empty pages if no images
+            const defaultBackground = backgroundImage || '#ffffff';
             return [
-                { id: 1, elements: [], background: '#ffffff', width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height },
-                { id: 2, elements: [], background: '#ffffff', width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height },
+                { id: 1, elements: [], background: defaultBackground, width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height },
+                { id: 2, elements: [], background: defaultBackground, width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height },
             ];
         }
 
@@ -183,10 +187,19 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 }
             });
 
+            // Apply background image if available, otherwise use white
+            const pageBackground = backgroundImage 
+                ? `url(${backgroundImage})`
+                : '#ffffff';
+
             pages.push({
                 id: Math.floor(i / imagesPerPage) + 1,
                 elements,
-                background: '#ffffff',
+                background: pageBackground,
+                backgroundImage: backgroundImage || undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
                 width: DEFAULT_PAGE_SIZE.width,
                 height: DEFAULT_PAGE_SIZE.height,
                 name: `Page ${Math.floor(i / imagesPerPage) + 1}`
@@ -194,24 +207,81 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }
 
         // Ensure we have at least 2 pages
+        const defaultBackground = backgroundImage || '#ffffff';
         if (pages.length === 0) {
             pages.push(
-                { id: 1, elements: [], background: '#ffffff', width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height },
-                { id: 2, elements: [], background: '#ffffff', width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height }
+                { 
+                    id: 1, 
+                    elements: [], 
+                    background: backgroundImage ? `url(${backgroundImage})` : defaultBackground,
+                    backgroundImage: backgroundImage || undefined,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    width: DEFAULT_PAGE_SIZE.width, 
+                    height: DEFAULT_PAGE_SIZE.height 
+                },
+                { 
+                    id: 2, 
+                    elements: [], 
+                    background: backgroundImage ? `url(${backgroundImage})` : defaultBackground,
+                    backgroundImage: backgroundImage || undefined,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    width: DEFAULT_PAGE_SIZE.width, 
+                    height: DEFAULT_PAGE_SIZE.height 
+                }
             );
         } else if (pages.length === 1) {
-            pages.push({ id: 2, elements: [], background: '#ffffff', width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height });
+            pages.push({ 
+                id: 2, 
+                elements: [], 
+                background: backgroundImage ? `url(${backgroundImage})` : defaultBackground,
+                backgroundImage: backgroundImage || undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                width: DEFAULT_PAGE_SIZE.width, 
+                height: DEFAULT_PAGE_SIZE.height 
+            });
         }
 
         return pages;
     }, []);
+
+    // Fetch template background when component mounts
+    useEffect(() => {
+        const fetchTemplateBackground = async () => {
+            try {
+                const response = await fetch(`/api/book/${paramsId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data?.templateImage) {
+                        setTemplateBackground(data.data.templateImage);
+                        toast.success('Cover design loaded successfully!');
+                    }
+                } else if (response.status === 404) {
+                    // No template found, that's okay - user hasn't selected a cover design yet
+                    console.log('No template found for this album');
+                }
+            } catch (error) {
+                console.error('Error fetching template background:', error);
+                // Don't show error toast as this is optional
+            }
+        };
+
+        if (paramsId) {
+            fetchTemplateBackground();
+        }
+    }, [paramsId]);
 
     // Initialize editor pages when album data is loaded
     useEffect(() => {
         if (albumData && !isInitialized && !isLoading) {
             setIsConverting(true);
             try {
-                const convertedPages = convertAlbumToEditorPages(albumData);
+                const convertedPages = convertAlbumToEditorPages(albumData, templateBackground);
                 setPages(convertedPages);
                 setIsInitialized(true);
             } catch (error) {
@@ -221,7 +291,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 setIsConverting(false);
             }
         }
-    }, [albumData, isInitialized, isLoading, convertAlbumToEditorPages]);
+    }, [albumData, isInitialized, isLoading, templateBackground, convertAlbumToEditorPages]);
 
     // Predefined background library
     const backgroundLibrary = [
@@ -262,6 +332,96 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             category: 'Texture'
         }
     ];
+
+    // Determine optimal background size based on image dimensions and aspect ratio
+    const determineBackgroundSize = useCallback((imageUrl: string, pageWidth: number, pageHeight: number): Promise<string> => {
+        return new Promise((resolve) => {
+            const img = document.createElement('img');
+            img.onload = () => {
+                const imageAspectRatio = img.width / img.height;
+                const pageAspectRatio = pageWidth / pageHeight;
+                
+                // Calculate different sizing options
+                const sizingOptions = {
+                    cover: 'cover',           // Default - fills entire area, may crop
+                    contain: 'contain',       // Fits entire image, may leave empty space
+                    fill: '100% 100%',       // Stretches to fill exactly, may distort
+                    auto: 'auto',            // Original size, may repeat or leave space
+                };
+
+                // Smart sizing logic based on aspect ratios and image size
+                let optimalSize: string;
+
+                // If image is much larger than page, use cover to avoid pixelation
+                if (img.width > pageWidth * 2 && img.height > pageHeight * 2) {
+                    optimalSize = sizingOptions.cover;
+                }
+                // If aspect ratios are very similar (within 10%), use cover for best fit
+                else if (Math.abs(imageAspectRatio - pageAspectRatio) < 0.1) {
+                    optimalSize = sizingOptions.cover;
+                }
+                // If image is much wider than page, use contain to show full width
+                else if (imageAspectRatio > pageAspectRatio * 1.5) {
+                    optimalSize = sizingOptions.contain;
+                }
+                // If image is much taller than page, use contain to show full height
+                else if (imageAspectRatio < pageAspectRatio * 0.67) {
+                    optimalSize = sizingOptions.contain;
+                }
+                // If image is smaller than page, use auto to maintain quality
+                else if (img.width < pageWidth && img.height < pageHeight) {
+                    optimalSize = sizingOptions.auto;
+                }
+                // Default to cover for most cases
+                else {
+                    optimalSize = sizingOptions.cover;
+                }
+
+                resolve(optimalSize);
+            };
+            
+            img.onerror = () => {
+                // Fallback to cover if image fails to load
+                resolve('cover');
+            };
+            
+            img.src = imageUrl;
+        });
+    }, []);
+
+    // Apply background image with intensity and adaptive sizing
+    const applyBackgroundImage = useCallback(async (imageUrl: string) => {
+        const targetPages = backgroundScope === 'all' ?
+            Array.from({ length: pages.length }, (_, i) => i) :
+            [selectedPageIndex];
+
+        // Determine optimal background size for the current page
+        const currentPage = pages[selectedPageIndex];
+        const optimalSize = await determineBackgroundSize(imageUrl, currentPage.width, currentPage.height);
+
+        setPages(prevPages => prevPages.map((page, index) => {
+            if (targetPages.includes(index)) {
+                // Handle both base64 data URLs and regular URLs
+                const backgroundStyle = imageUrl.startsWith('data:')
+                    ? `linear-gradient(rgba(255,255,255,${1 - backgroundIntensity}), rgba(255,255,255,${1 - backgroundIntensity})), url("${imageUrl}")`
+                    : `linear-gradient(rgba(255,255,255,${1 - backgroundIntensity}), rgba(255,255,255,${1 - backgroundIntensity})), url(${imageUrl})`;
+
+                return {
+                    ...page,
+                    background: backgroundStyle,
+                    backgroundImage: imageUrl,
+                    backgroundIntensity: backgroundIntensity,
+                    backgroundSize: optimalSize,
+                    backgroundPosition: 'center',
+                    backgroundRepeat: optimalSize === 'auto' ? 'no-repeat' : 'no-repeat'
+                };
+            }
+            return page;
+        }));
+        
+        const scopeText = backgroundScope === 'all' ? 'all pages' : `page ${selectedPageIndex + 1}`;
+        toast.success(`Smart background applied to ${scopeText}! Using ${optimalSize} sizing.`);
+    }, [backgroundScope, selectedPageIndex, pages.length, backgroundIntensity, determineBackgroundSize]);
 
     // Generate AI background using the existing template generation API
     const generateAIBackground = useCallback(async () => {
@@ -320,32 +480,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         } finally {
             setIsGeneratingBackground(false);
         }
-    }, [aiPrompt, backgroundIntensity]);
-
-    // Apply background image with intensity
-    const applyBackgroundImage = useCallback((imageUrl: string) => {
-        const targetPages = backgroundScope === 'all' ?
-            Array.from({ length: pages.length }, (_, i) => i) :
-            [selectedPageIndex];
-
-        setPages(prevPages => prevPages.map((page, index) => {
-            if (targetPages.includes(index)) {
-                // Handle both base64 data URLs and regular URLs
-                const backgroundStyle = imageUrl.startsWith('data:')
-                    ? `linear-gradient(rgba(255,255,255,${1 - backgroundIntensity}), rgba(255,255,255,${1 - backgroundIntensity})), url("${imageUrl}")`
-                    : `linear-gradient(rgba(255,255,255,${1 - backgroundIntensity}), rgba(255,255,255,${1 - backgroundIntensity})), url(${imageUrl})`;
-
-                return {
-                    ...page,
-                    background: backgroundStyle,
-                    backgroundImage: imageUrl,
-                    backgroundIntensity: backgroundIntensity
-                };
-            }
-            return page;
-        }));
-        const scopeText = backgroundScope === 'all' ? 'all pages' : `page ${selectedPageIndex + 1}`;
-    }, [backgroundScope, selectedPageIndex, pages.length, backgroundIntensity]);
+    }, [aiPrompt, backgroundIntensity, applyBackgroundImage]);
 
     // Templates with proper typing
     const templates: Template[] = [
@@ -2226,7 +2361,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
                                 {/* Mask Shape Selection */}
                                 <div className="grid grid-cols-3 gap-2 mb-4">
-                                    {Object.entries(MASK_SHAPES).map(([shapeType, shapeInfo]) => (
+                                {Object.entries(MASK_SHAPES).map(([shapeType, shapeInfo]) => (
                                         <button
                                             key={shapeType}
                                             onClick={() => applyMaskToSelectedImage(shapeType as ShapeType)}
@@ -2237,7 +2372,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                 }`}
                                             title={`Apply ${shapeInfo.name} mask`}
                                         >
-                                            {shapeInfo.icon}
+                                            {MaskIcons[shapeType as ShapeType]}
                                         </button>
                                     ))}
                                 </div>
@@ -2322,18 +2457,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         )}
                                     </div>
                                 )}
-
-                                {/* Instructions */}
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                    <p className="text-xs text-gray-700 mb-2">💡 How to use masks:</p>
-                                    <ul className="text-xs text-gray-600 space-y-1">
-                                        <li>1. Select an image on the canvas</li>
-                                        <li>2. Choose a mask shape above</li>
-                                        <li>3. Adjust feather for soft edges</li>
-                                        <li>4. Use invert to flip the mask</li>
-                                        <li>5. Adjust opacity for transparency</li>
-                                    </ul>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -2503,7 +2626,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                             </div>
 
                             {/* AI Background Generator */}
-                            <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                            <div>
                                 <div className="space-y-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2579,22 +2702,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                     </button>
                                 </div>
                             </div>
-
-                            {/* AI Tools Status */}
-                            {/* <div className="border-t pt-4">
-                                <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-3">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Sparkles className="w-4 h-4 text-purple-600" />
-                                        <p className="text-sm font-medium text-purple-800">AI Tools Status</p>
-                                    </div>
-                                    <ul className="text-xs text-purple-700 space-y-1">
-                                        <li>• Current Page: {selectedPageIndex + 1}</li>
-                                        <li>• Images on page: {pages[selectedPageIndex]?.elements.filter(el => el.type === 'image').length || 0}</li>
-                                        <li>• Selected: {selectedElement ? `${selectedElement.type} element` : 'None'}</li>
-                                        <li>• AI Services: {isGeneratingCaption || isGeneratingLayout || isGeneratingBackground ? 'Active' : 'Ready'}</li>
-                                    </ul>
-                                </div>
-                            </div> */}
                         </div>
                     </div>
                 )}
@@ -2643,9 +2750,9 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         width: `${leftPage.width}px`,
                                         height: `${leftPage.height}px`,
                                         background: leftPage.background || '#ffffff',
-                                        backgroundSize: 'contain',
-                                        backgroundPosition: 'center',
-                                        backgroundRepeat: 'no-repeat'
+                                        backgroundSize: (leftPage as any).backgroundSize || 'cover',
+                                        backgroundPosition: (leftPage as any).backgroundPosition || 'center',
+                                        backgroundRepeat: (leftPage as any).backgroundRepeat || 'no-repeat'
                                     }}
                                     onDragOver={handleDragOver}
                                     onDrop={(e) => {
@@ -2788,9 +2895,9 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                         width: `${rightPage.width}px`,
                                         height: `${rightPage.height}px`,
                                         background: rightPage.background || '#ffffff',
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        backgroundRepeat: 'no-repeat'
+                                        backgroundSize: (rightPage as any).backgroundSize || 'cover',
+                                        backgroundPosition: (rightPage as any).backgroundPosition || 'center',
+                                        backgroundRepeat: (rightPage as any).backgroundRepeat || 'no-repeat'
                                     }}
                                     onDragOver={handleDragOver}
                                     onDrop={(e) => {
@@ -2861,7 +2968,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                     />
                                                     {(element as ImageElement).mask && (
                                                         <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
-                                                            {MASK_SHAPES[(element as ImageElement).mask!.shape.type].icon}
+                                                            {MaskIcons[(element as ImageElement).mask!.shape.type]}
                                                         </div>
                                                     )}
                                                 </div>

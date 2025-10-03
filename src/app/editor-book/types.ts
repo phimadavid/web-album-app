@@ -143,6 +143,10 @@ export interface Page {
    elements: Element[];
    background: string;
    backgroundImage?: string;
+   backgroundSize?: string;
+   backgroundPosition?: string;
+   backgroundRepeat?: string;
+   backgroundIntensity?: number;
    width: number;
    height: number;
    name?: string;
@@ -319,16 +323,16 @@ export const DEFAULT_ELEMENT_SIZE: Size = {
 };
 
 // Mask Shape Definitions
-export const MASK_SHAPES: Record<ShapeType, { name: string; icon: string; path?: string }> = {
-   rectangle: { name: "Rectangle", icon: "⬜" },
-   circle: { name: "Circle", icon: "⭕" },
-   ellipse: { name: "Ellipse", icon: "⭕" },
-   triangle: { name: "Triangle", icon: "🔺" },
-   star: { name: "Star", icon: "⭐" },
-   heart: { name: "Heart", icon: "❤️" },
-   diamond: { name: "Diamond", icon: "💎" },
-   hexagon: { name: "Hexagon", icon: "⬡" },
-   arrow: { name: "Arrow", icon: "➡️" },
-   cloud: { name: "Cloud", icon: "☁️" },
-   polygon: { name: "Polygon", icon: "⬟" }
+export const MASK_SHAPES: Record<ShapeType, { name: string; iconKey: ShapeType; path?: string }> = {
+   rectangle: { name: "Rectangle", iconKey: "rectangle" },
+   circle: { name: "Circle", iconKey: "circle" },
+   ellipse: { name: "Ellipse", iconKey: "ellipse" },
+   triangle: { name: "Triangle", iconKey: "triangle" },
+   star: { name: "Star", iconKey: "star" },
+   heart: { name: "Heart", iconKey: "heart" },
+   diamond: { name: "Diamond", iconKey: "diamond" },
+   hexagon: { name: "Hexagon", iconKey: "hexagon" },
+   arrow: { name: "Arrow", iconKey: "arrow" },
+   cloud: { name: "Cloud", iconKey: "cloud" },
+   polygon: { name: "Polygon", iconKey: "polygon" }
 };
