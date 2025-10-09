@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Image, Type, Palette, Download, Save, Grid, Layers, Move, RotateCcw, Trash2, Upload, Pen, Sticker, ArrowLeft, Eye, BookOpen, X, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Image, Type, Palette, Download, Save, Grid, Move, Trash2, Upload, Sticker, ArrowLeft, Eye, BookOpen, X, Sparkles, ZoomIn, ZoomOut, RotateCw, RefreshCw } from 'lucide-react';
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { ThreeDots } from "react-loader-spinner";
 import { AnimatePresence, motion } from "framer-motion";
-
-// Import types from the dedicated types file
 import {
     Element,
     ImageElement,
@@ -24,10 +22,7 @@ import {
     ShapeType,
     MASK_SHAPES
 } from '../../editor-book/types';
-
 import { MaskIcons } from '../../editor-book/mask-icons';
-
-// Import utility functions
 import {
     createImageElement,
     createTextElement,
@@ -61,7 +56,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
     // Editor states
     const [currentSpread, setCurrentSpread] = useState<number>(0);
-    const [viewMode, setViewMode] = useState<'spread' | 'scroll'>('spread');
     const [pages, setPages] = useState<Page[]>([
         { id: 1, elements: [], background: '#ffffff', width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height },
         { id: 2, elements: [], background: '#ffffff', width: DEFAULT_PAGE_SIZE.width, height: DEFAULT_PAGE_SIZE.height },
@@ -82,11 +76,9 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const [currentDrawingPath, setCurrentDrawingPath] = useState<DrawingPath | null>(null);
     const [drawingColor, setDrawingColor] = useState<string>('#000000');
     const [drawingWidth, setDrawingWidth] = useState<number>(2);
-    const [backgroundMode, setBackgroundMode] = useState<'color' | 'library' | 'ai'>('color');
     const [aiPrompt, setAiPrompt] = useState<string>('');
     const [backgroundIntensity, setBackgroundIntensity] = useState<number>(0.5);
     const [isGeneratingBackground, setIsGeneratingBackground] = useState<boolean>(false);
-    const [selectedLibraryBackground, setSelectedLibraryBackground] = useState<string>('');
     const [backgroundScope, setBackgroundScope] = useState<'current' | 'all'>('current');
     const [showTextInput, setShowTextInput] = useState<boolean>(false);
     const [textInputValue, setTextInputValue] = useState<string>('');
@@ -105,11 +97,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     });
     const [savedTextStyles, setSavedTextStyles] = useState<any[]>([]);
     const [showAIContentPanel, setShowAIContentPanel] = useState<boolean>(false);
-    const [aiContentType, setAiContentType] = useState<'caption' | 'headline' | 'paragraph'>('caption');
-    const [aiTone, setAiTone] = useState<'humorous' | 'sentimental' | 'poetic' | 'formal' | 'casual'>('casual');
-    const [aiStyle, setAiStyle] = useState<'single' | 'paragraph' | 'question' | 'quote'>('single');
     const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
-    const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
     const [selectedSuggestion, setSelectedSuggestion] = useState<string>('');
     const [recentImages, setRecentImages] = useState<any[]>([]);
     const [loadingRecentImages, setLoadingRecentImages] = useState<boolean>(false);
@@ -122,12 +110,25 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const [isGeneratingLayout, setIsGeneratingLayout] = useState<boolean>(false);
     const [layoutButtonPosition, setLayoutButtonPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
     const [currentLayoutIndex, setCurrentLayoutIndex] = useState<number>(0);
-    // Mask-related states
-    const [showMaskPanel, setShowMaskPanel] = useState<boolean>(false);
-    const [selectedMaskShape, setSelectedMaskShape] = useState<ShapeType>('circle');
     const [maskFeather, setMaskFeather] = useState<number>(0);
     const [maskInvert, setMaskInvert] = useState<boolean>(false);
     const [maskOpacity, setMaskOpacity] = useState<number>(1);
+    // Image control panel states
+    const [showImageControlPanel, setShowImageControlPanel] = useState<boolean>(false);
+    const [controlPanelPosition, setControlPanelPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [selectedImageForControl, setSelectedImageForControl] = useState<ImageElement | null>(null);
+    // Image manipulation states (for content inside frame)
+    const [imageTransforms, setImageTransforms] = useState<{[key: string]: {
+        scale: number;
+        rotation: number;
+        offsetX: number;
+        offsetY: number;
+    }}>({});
+    // Image dragging states
+    const [isDraggingImage, setIsDraggingImage] = useState<boolean>(false);
+    const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [dragStartOffset, setDragStartOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [draggingImageId, setDraggingImageId] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -292,46 +293,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
             }
         }
     }, [albumData, isInitialized, isLoading, templateBackground, convertAlbumToEditorPages]);
-
-    // Predefined background library
-    const backgroundLibrary = [
-        {
-            id: 'nature-1',
-            name: 'Mountain Lake',
-            url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&crop=center',
-            category: 'Nature'
-        },
-        {
-            id: 'nature-2',
-            name: 'Forest Path',
-            url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop&crop=center',
-            category: 'Nature'
-        },
-        {
-            id: 'abstract-1',
-            name: 'Geometric Waves',
-            url: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&h=600&fit=crop&crop=center',
-            category: 'Abstract'
-        },
-        {
-            id: 'abstract-2',
-            name: 'Color Gradient',
-            url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop&crop=center',
-            category: 'Abstract'
-        },
-        {
-            id: 'texture-1',
-            name: 'Paper Texture',
-            url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&crop=center',
-            category: 'Texture'
-        },
-        {
-            id: 'texture-2',
-            name: 'Marble Pattern',
-            url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop&crop=center',
-            category: 'Texture'
-        }
-    ];
 
     // Determine optimal background size based on image dimensions and aspect ratio
     const determineBackgroundSize = useCallback((imageUrl: string, pageWidth: number, pageHeight: number): Promise<string> => {
@@ -622,21 +583,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     // Handle modal file upload trigger
     const handleModalFileUpload = useCallback((): void => {
         fileInputRef.current?.click();
-    }, []);
-
-    // Enhanced add text element with Smart Text & Storytelling Suite
-    const addText = useCallback((position?: { x: number; y: number }): void => {
-        const textPosition = position || { x: 150, y: 150 };
-
-        // Show advanced text panel instead of simple input
-        setTextInputPosition(textPosition);
-        setTextInputValue('');
-        setShowAdvancedTextPanel(true);
-
-        // Focus the input after a brief delay to ensure it's rendered
-        setTimeout(() => {
-            textInputRef.current?.focus();
-        }, 100);
     }, []);
 
     // Save custom text style
@@ -1070,24 +1016,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const handleTextEdit = useCallback((elementId: string, newText: string): void => {
         updateElement(elementId, { text: newText });
     }, [updateElement]);
-
-    // Change background for selected page or all pages based on scope
-    const changeBackground = useCallback((color: string): void => {
-        const targetPages = backgroundScope === 'all' ?
-            Array.from({ length: pages.length }, (_, i) => i) :
-            [selectedPageIndex];
-
-        setPages(prevPages => prevPages.map((page, index) => {
-            if (targetPages.includes(index)) {
-                return { ...page, background: color };
-            }
-            return page;
-        }));
-
-        // Single toast notification
-        const scopeText = backgroundScope === 'all' ? 'all pages' : `page ${selectedPageIndex + 1}`;
-        toast.success(`Background color applied to ${scopeText}!`);
-    }, [selectedPageIndex, backgroundScope, pages.length]);
 
     // Handle save from editor
     const handleEditorSave = useCallback(async (pagesToSave?: Page[]) => {
@@ -1736,23 +1664,6 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
         }));
     }, [currentLayoutIndex]);
 
-    // Get layout name for user feedback
-    const getLayoutName = useCallback((count: number): string => {
-        const layoutVariationNames = {
-            1: ['Single Centered', 'Large Centered', 'Portrait Centered'],
-            2: ['Side by Side', 'Top & Bottom', 'Diagonal', 'Large & Small'],
-            3: ['Triangle', 'Vertical Stack', 'L-Shape'],
-            4: ['Grid 2x2', 'One Large + Three Small', 'Cross Pattern', 'Horizontal Line'],
-            5: ['Cross Pattern', 'Pentagon', 'Flower Pattern'],
-            6: ['Grid 3x2', 'Grid 2x3', 'Hexagon Pattern', 'Pyramid']
-        };
-
-        const variations = layoutVariationNames[Math.min(count, 6) as keyof typeof layoutVariationNames] || ['Grid Layout'];
-        const variationIndex = (currentLayoutIndex - 1) % variations.length;
-
-        return variations[variationIndex] || `Grid ${Math.ceil(Math.sqrt(count))}x${Math.ceil(count / Math.ceil(Math.sqrt(count)))}`;
-    }, [currentLayoutIndex]);
-
     // Apply mask to selected image
     const applyMaskToSelectedImage = useCallback((shapeType: ShapeType) => {
         if (!selectedElement || selectedElement.type !== 'image') {
@@ -1833,6 +1744,76 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
     const rightPage = pages[rightPageIndex];
     const totalSpreads = Math.ceil(pages.length / 2);
 
+    // Close image control panel when clicking outside or when selection changes
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (showImageControlPanel) {
+                const target = e.target as HTMLElement;
+                const controlPanel = document.querySelector('[data-control-panel="true"]');
+                const imageElement = document.querySelector(`[data-element-id="${selectedImageForControl?.id}"]`);
+                
+                if (controlPanel && !controlPanel.contains(target) && 
+                    imageElement && !imageElement.contains(target)) {
+                    setShowImageControlPanel(false);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showImageControlPanel, selectedImageForControl?.id]);
+
+    // Update control panel when selected image changes
+    useEffect(() => {
+        if (selectedImageForControl && selectedElement && 
+            selectedElement.type === 'image' && 
+            selectedElement.id === selectedImageForControl.id) {
+            setSelectedImageForControl(selectedElement as ImageElement);
+        } else if (selectedElement?.type !== 'image') {
+            setShowImageControlPanel(false);
+        }
+    }, [selectedElement, selectedImageForControl]);
+
+    // Global mouse handlers for image content dragging
+    useEffect(() => {
+        const handleGlobalMouseMove = (e: MouseEvent) => {
+            if (!isDraggingImage || !draggingImageId) return;
+
+            const deltaX = e.clientX - dragStartPos.x;
+            const deltaY = e.clientY - dragStartPos.y;
+
+            const newOffsetX = dragStartOffset.x + deltaX;
+            const newOffsetY = dragStartOffset.y + deltaY;
+
+            setImageTransforms(prev => ({
+                ...prev,
+                [draggingImageId]: {
+                    scale: prev[draggingImageId]?.scale || 1,
+                    rotation: prev[draggingImageId]?.rotation || 0,
+                    offsetX: newOffsetX,
+                    offsetY: newOffsetY
+                }
+            }));
+        };
+
+        const handleGlobalMouseUp = () => {
+            if (isDraggingImage) {
+                setIsDraggingImage(false);
+                setDraggingImageId(null);
+            }
+        };
+
+        if (isDraggingImage) {
+            document.addEventListener('mousemove', handleGlobalMouseMove);
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleGlobalMouseMove);
+            document.removeEventListener('mouseup', handleGlobalMouseUp);
+        };
+    }, [isDraggingImage, draggingImageId, dragStartPos, dragStartOffset]);
+
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -1850,9 +1831,13 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                 }, 100);
             }
 
-            // Escape to cancel text input
-            if (e.key === 'Escape' && showTextInput) {
-                handleTextInputCancel();
+            // Escape to cancel text input or close control panel
+            if (e.key === 'Escape') {
+                if (showTextInput) {
+                    handleTextInputCancel();
+                } else if (showImageControlPanel) {
+                    setShowImageControlPanel(false);
+                }
             }
 
             // Enter to submit text input
@@ -1864,7 +1849,7 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [showTextInput, handleTextInputCancel, handleTextInputSubmit]);
+    }, [showTextInput, showImageControlPanel, handleTextInputCancel, handleTextInputSubmit]);
 
     // Loading state
     if (isLoading || isConverting) {
@@ -2789,9 +2774,20 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                 e.stopPropagation();
                                                 setSelectedPageIndex(leftPageIndex);
                                                 setSelectedElement(element);
+                                                
+                                                // Show control panel for image elements
+                                                if (element.type === 'image') {
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    
+                                                    setControlPanelPosition({
+                                                        x: rect.left,
+                                                        y: rect.top - 100
+                                                    });
+                                                    setSelectedImageForControl(element as ImageElement);
+                                                    setShowImageControlPanel(true);
+                                                }
                                             }}
-                                            className={`absolute cursor-move transition-all duration-150 ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''
-                                                }`}
+                                            className={`absolute cursor-move transition-all duration-150 ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''}`}
                                             style={{
                                                 left: element.x,
                                                 top: element.y,
@@ -2802,12 +2798,46 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                             }}
                                         >
                                             {element.type === 'image' ? (
-                                                <div className="w-full h-full relative">
+                                                <div className={`w-full h-full relative border-2 rounded-lg overflow-hidden transition-all duration-200 ${
+                                                    selectedElement?.id === element.id 
+                                                        ? 'border-blue-500 shadow-lg' 
+                                                        : 'border-gray-300 hover:border-blue-400 hover:shadow-md'
+                                                }`}>
+                                                    {/* Frame Header */}
+                                                    <div className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b transition-opacity duration-200 ${
+                                                        selectedElement?.id === element.id 
+                                                            ? 'from-blue-500/20 to-transparent opacity-100' 
+                                                            : 'from-gray-400/10 to-transparent opacity-0 hover:opacity-100'
+                                                    }`}>
+                                                        <div className="flex items-center justify-between px-2 h-full">
+                                                            <div className="flex items-center gap-1">
+                                                                <div className={`w-2 h-2 rounded-full ${
+                                                                    selectedElement?.id === element.id ? 'bg-blue-500' : 'bg-gray-400'
+                                                                }`}></div>
+                                                                <span className="text-xs text-gray-600 font-medium">Image</span>
+                                                            </div>
+                                                            {selectedElement?.id === element.id && (
+                                                                <div className="flex items-center gap-1">
+                                                                    <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                                                    <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                                                    <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Image Content */}
                                                     <img
                                                         src={(element as ImageElement).src}
                                                         alt={(element as ImageElement).alt || ""}
-                                                        className="w-full h-full object-cover border border-gray-300"
+                                                        className={`w-full h-full object-cover ${isDraggingImage && draggingImageId === element.id ? 'cursor-grabbing' : 'cursor-grab'}`}
                                                         style={{
+                                                            transform: (() => {
+                                                                const transform = imageTransforms[element.id] || { scale: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+                                                                return `scale(${transform.scale}) rotate(${transform.rotation}deg) translate(${transform.offsetX}px, ${transform.offsetY}px)`;
+                                                            })(),
+                                                            transformOrigin: 'center center',
+                                                            transition: isDraggingImage && draggingImageId === element.id ? 'none' : 'transform 0.2s ease-out',
                                                             clipPath: (element as ImageElement).mask ?
                                                                 `path('${generateShapePath(
                                                                     (element as ImageElement).mask!.shape.type,
@@ -2821,7 +2851,36 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                                 undefined,
                                                             opacity: (element as ImageElement).mask?.opacity || 1
                                                         }}
+                                                        onMouseDown={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            
+                                                            const currentTransform = imageTransforms[element.id] || { scale: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+                                                            
+                                                            setIsDraggingImage(true);
+                                                            setDraggingImageId(element.id);
+                                                            setDragStartPos({ x: e.clientX, y: e.clientY });
+                                                            setDragStartOffset({ x: currentTransform.offsetX, y: currentTransform.offsetY });
+                                                        }}
+                                                        draggable={false}
                                                     />
+                                                    
+                                                    {/* Corner Indicators */}
+                                                    {selectedElement?.id === element.id && (
+                                                        <>
+                                                            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-blue-500 rounded-tl"></div>
+                                                            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-blue-500 rounded-tr"></div>
+                                                            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-blue-500 rounded-bl"></div>
+                                                            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-blue-500 rounded-br"></div>
+                                                        </>
+                                                    )}
+                                                    
+                                                    {/* Mask Indicator */}
+                                                    {(element as ImageElement).mask && (
+                                                        <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded z-10">
+                                                            {MaskIcons[(element as ImageElement).mask!.shape.type]}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : element.type === 'drawing' ? (
                                                 <svg
@@ -2933,9 +2992,20 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                 e.stopPropagation();
                                                 setSelectedPageIndex(rightPageIndex);
                                                 setSelectedElement(element);
+                                                
+                                                // Show control panel for image elements
+                                                if (element.type === 'image') {
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    
+                                                    setControlPanelPosition({
+                                                        x: rect.left,
+                                                        y: rect.top - 100
+                                                    });
+                                                    setSelectedImageForControl(element as ImageElement);
+                                                    setShowImageControlPanel(true);
+                                                }
                                             }}
-                                            className={`absolute cursor-move transition-all duration-150 ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''
-                                                }`}
+                                            className={`absolute cursor-move transition-all duration-150 ${selectedElement?.id === element.id ? 'ring-2 ring-blue-500' : ''}`}
                                             style={{
                                                 left: element.x,
                                                 top: element.y,
@@ -2946,12 +3016,46 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                             }}
                                         >
                                             {element.type === 'image' ? (
-                                                <div className="w-full h-full relative">
+                                                <div className={`w-full h-full relative border-2 rounded-lg overflow-hidden transition-all duration-200 ${
+                                                    selectedElement?.id === element.id 
+                                                        ? 'border-blue-500 shadow-lg' 
+                                                        : 'border-gray-300 hover:border-blue-400 hover:shadow-md'
+                                                }`}>
+                                                    {/* Frame Header */}
+                                                    <div className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b transition-opacity duration-200 ${
+                                                        selectedElement?.id === element.id 
+                                                            ? 'from-blue-500/20 to-transparent opacity-100' 
+                                                            : 'from-gray-400/10 to-transparent opacity-0 hover:opacity-100'
+                                                    }`}>
+                                                        <div className="flex items-center justify-between px-2 h-full">
+                                                            <div className="flex items-center gap-1">
+                                                                <div className={`w-2 h-2 rounded-full ${
+                                                                    selectedElement?.id === element.id ? 'bg-blue-500' : 'bg-gray-400'
+                                                                }`}></div>
+                                                                <span className="text-xs text-gray-600 font-medium">Image</span>
+                                                            </div>
+                                                            {selectedElement?.id === element.id && (
+                                                                <div className="flex items-center gap-1">
+                                                                    <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                                                    <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                                                    <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Image Content */}
                                                     <img
                                                         src={(element as ImageElement).src}
                                                         alt={(element as ImageElement).alt || ""}
-                                                        className="w-full h-full object-cover border border-gray-300"
+                                                        className={`w-full h-full object-cover ${isDraggingImage && draggingImageId === element.id ? 'cursor-grabbing' : 'cursor-grab'}`}
                                                         style={{
+                                                            transform: (() => {
+                                                                const transform = imageTransforms[element.id] || { scale: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+                                                                return `scale(${transform.scale}) rotate(${transform.rotation}deg) translate(${transform.offsetX}px, ${transform.offsetY}px)`;
+                                                            })(),
+                                                            transformOrigin: 'center center',
+                                                            transition: isDraggingImage && draggingImageId === element.id ? 'none' : 'transform 0.2s ease-out',
                                                             clipPath: (element as ImageElement).mask ?
                                                                 `path('${generateShapePath(
                                                                     (element as ImageElement).mask!.shape.type,
@@ -2965,9 +3069,33 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                                                                 undefined,
                                                             opacity: (element as ImageElement).mask?.opacity || 1
                                                         }}
+                                                        onMouseDown={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            
+                                                            const currentTransform = imageTransforms[element.id] || { scale: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+                                                            
+                                                            setIsDraggingImage(true);
+                                                            setDraggingImageId(element.id);
+                                                            setDragStartPos({ x: e.clientX, y: e.clientY });
+                                                            setDragStartOffset({ x: currentTransform.offsetX, y: currentTransform.offsetY });
+                                                        }}
+                                                        draggable={false}
                                                     />
+                                                    
+                                                    {/* Corner Indicators */}
+                                                    {selectedElement?.id === element.id && (
+                                                        <>
+                                                            <div className="absolute top-1 left-1 w-3 h-3 border-l-2 border-t-2 border-blue-500 rounded-tl"></div>
+                                                            <div className="absolute top-1 right-1 w-3 h-3 border-r-2 border-t-2 border-blue-500 rounded-tr"></div>
+                                                            <div className="absolute bottom-1 left-1 w-3 h-3 border-l-2 border-b-2 border-blue-500 rounded-bl"></div>
+                                                            <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-blue-500 rounded-br"></div>
+                                                        </>
+                                                    )}
+                                                    
+                                                    {/* Mask Indicator */}
                                                     {(element as ImageElement).mask && (
-                                                        <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
+                                                        <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded z-10">
                                                             {MaskIcons[(element as ImageElement).mask!.shape.type]}
                                                         </div>
                                                     )}
@@ -3214,6 +3342,113 @@ const BookAlbumPage = ({ params }: BookAlbumPageProps) => {
                         )}
                     </div>
                 </div>
+
+                {/* Image Control Panel - Shows when image is clicked */}
+                {showImageControlPanel && selectedImageForControl && (
+                    <div
+                        className="fixed z-50 pointer-events-auto"
+                        style={{
+                            left: `${controlPanelPosition.x}px`,
+                            top: `${controlPanelPosition.y}px`,
+                        }}
+                    >
+                        <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-3 w-auto" data-control-panel="true">
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-semibold text-gray-800 text-sm">Controls</h4>
+                                <button
+                                    onClick={() => setShowImageControlPanel(false)}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                    title="Close"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+
+                            {/* Image Control Icons */}
+                            <div className="grid grid-cols-4 gap-2">
+                                {/* Zoom Out */}
+                                <button
+                                    onClick={() => {
+                                        const currentTransform = imageTransforms[selectedImageForControl.id] || { scale: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+                                        const newScale = Math.max(0.2, currentTransform.scale * 0.8);
+                                        
+                                        setImageTransforms(prev => ({
+                                            ...prev,
+                                            [selectedImageForControl.id]: {
+                                                ...currentTransform,
+                                                scale: newScale
+                                            }
+                                        }));
+                                    }}
+                                    className="flex items-center justify-center p-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                                    title="Zoom Out Image"
+                                >
+                                    <ZoomOut className="w-5 h-5" />
+                                </button>
+
+                                {/* Zoom In */}
+                                <button
+                                    onClick={() => {
+                                        const currentTransform = imageTransforms[selectedImageForControl.id] || { scale: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+                                        const newScale = Math.min(3, currentTransform.scale * 1.2);
+                                        
+                                        setImageTransforms(prev => ({
+                                            ...prev,
+                                            [selectedImageForControl.id]: {
+                                                ...currentTransform,
+                                                scale: newScale
+                                            }
+                                        }));
+                                    }}
+                                    className="flex items-center justify-center p-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                                    title="Zoom In Image"
+                                >
+                                    <ZoomIn className="w-5 h-5" />
+                                </button>
+
+                                {/* Rotate */}
+                                <button
+                                    onClick={() => {
+                                        const currentTransform = imageTransforms[selectedImageForControl.id] || { scale: 1, rotation: 0, offsetX: 0, offsetY: 0 };
+                                        const newRotation = (currentTransform.rotation + 90) % 360;
+                                        
+                                        setImageTransforms(prev => ({
+                                            ...prev,
+                                            [selectedImageForControl.id]: {
+                                                ...currentTransform,
+                                                rotation: newRotation
+                                            }
+                                        }));
+                                    }}
+                                    className="flex items-center justify-center p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                                    title="Rotate Image 90°"
+                                >
+                                    <RotateCw className="w-5 h-5" />
+                                </button>
+
+                                {/* Reset */}
+                                <button
+                                    onClick={() => {
+                                        setImageTransforms(prev => ({
+                                            ...prev,
+                                            [selectedImageForControl.id]: {
+                                                scale: 1,
+                                                rotation: 0,
+                                                offsetX: 0,
+                                                offsetY: 0
+                                            }
+                                        }));
+                                        toast.success('Image content reset to default');
+                                    }}
+                                    className="flex items-center justify-center p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+                                    title="Reset Image Content"
+                                >
+                                    <RefreshCw className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Text Properties Panel - Shows when text element is selected */}
                 {selectedElement && selectedElement.type === 'text' && (
